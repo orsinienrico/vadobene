@@ -20,3 +20,7 @@ Registro delle scelte non coperte da spec/brand (CLAUDE.md: scegli l'opzione pi�
 | 2026-09-19 | Contatore "max 20 voti per sessione" in cookie httpOnly server-side | Spec §6.4 chiede tracciamento server-side; localStorage è vietato da CLAUDE.md per stato critico |
 | 2026-09-19 | Richieste Pro identificate in coda da `votes_target > 5` | Il piano Pro imposta `votes_target=10`; evita una join su `users.plan` nella query coda |
 | 2026-09-19 | URL foto giurato firmato a 60 secondi | Scadenza breve: la foto esiste solo per il tempo del voto (minimo necessario) |
+| 2026-09-19 | Voti AI nel cron: `juror_id = null` | I voti generati non appartengono a nessun giurato; l'unique(request_id, juror_id) in Postgres tratta i NULL come distinti, quindi più voti AI sulla stessa request non collidono |
+| 2026-09-19 | Card OG image 1080×1350 senza foto, sempre | La condivisione social parte senza foto (privacy di default); la foto sta solo nel permalink `/c/[id]` se `keep_photo` |
+| 2026-09-19 | `/c/[id]` rende la card server-side con la stessa grafica in-app; la PNG OG (next/og) per le preview social è separata | Un solo layout da mantenere in-app; la OG image serve solo ai crawler |
+| 2026-09-19 | Chiusura giurì client: a 5 voti o timer 0, il client legge `jury_summary` con retry (il cron chiude entro 30s) | Supabase free non ha pg_cron affidabile; Vercel Cron su /api/cron/close-juries con secret |

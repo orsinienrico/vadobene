@@ -7,17 +7,21 @@ import { ScanLines } from "./ScanLines";
 import { ThreadSent } from "./ThreadSent";
 import { AiReply } from "./AiReply";
 import { VoteGate } from "./VoteGate";
-import type { AiVerdict } from "@/lib/contracts";
+import { JuryLive } from "./JuryLive";
+import { VerdictCard } from "./VerdictCard";
+import type { AiVerdict, JurySummary } from "@/lib/contracts";
 
 type Occasion = { slug: string; label_it: string };
 
-type Stage = "input" | "scan" | "ai" | "gate";
+type Stage = "input" | "scan" | "ai" | "gate" | "jury" | "final";
 
 const TITLES: Record<Stage, { h: string; sub: string }> = {
   input: { h: "Il tuo riflesso", sub: "Foto, occasione, trenta secondi." },
   scan: { h: "Inviato", sub: "Cinque secondi, non di più." },
   ai: { h: "Inviato", sub: "Cinque secondi, non di più." },
   gate: { h: "Prima rispondi tu", sub: "Cinque voti, poi la tua domanda entra in coda." },
+  jury: { h: "Stanno guardando", sub: "Tre minuti, alla cieca." },
+  final: { h: "Ecco.", sub: "Cinque risposte, una sola verità." },
 };
 
 /**
@@ -32,6 +36,8 @@ export function Flow() {
   const [verdict, setVerdict] = useState<AiVerdict | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [jury, setJury] = useState<{ id: string; deadline: string } | null>(null);
+  const [summary, setSummary] = useState<JurySummary | null>(null);
 
   useEffect(() => {
     fetch("/api/occasions")
@@ -134,9 +140,54 @@ export function Flow() {
       {stage === "gate" && (
         <div className="animate-fade">
           <VoteGate
-            onCreditFull={() => {
-              // Fase 3 apre il giurì da qui.
-              setStage("ai");
+            onCreditFull={async () => {
+              // Apri il giurì: scala 5 crediti e passa allo stadio 5.
+              try {
+                const res = await fetch("/api/jury/open", { method: "POST" });
+                const d = await res.json();
+                if (res.ok && d.requestId) {
+                  setJury({ id: d.requestId, deadline: d.deadline });
+                  setStage("jury");
+                } else {
+                  setError(d.error ?? "Giurì non aperto.");
+                  setStage("input");
+                }
+              } catch {
+                setError("Giurì non aperto. Riprova.");
+                setStage("input");
+              }
+            }}
+          />
+        </div>
+      )}
+
+      {/* STADIO 5: stanno guardando */}
+      {stage === "jury" && jury && (
+        <div className="animate-fade">
+          <JuryLive
+            requestId={jury.id}
+            deadline={jury.deadline}
+            onClosed={(summary) => {
+              setSummary(summary);
+              setStage("final");
+            }}
+          />
+        </div>
+      )}
+
+      {/* STADIO 6: ecco */}
+      {stage === "final" && summary && occasion && (
+        <div className="animate-fade">
+          <VerdictCard
+            summary={summary}
+            occasion={occasion.label_it}
+            onNewLook={() => {
+              setPhoto(null);
+              setOccasion(null);
+              setVerdict(null);
+              setSummary(null);
+              setJury(null);
+              setStage("input");
             }}
           />
         </div>
