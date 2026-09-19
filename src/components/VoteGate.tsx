@@ -176,7 +176,7 @@ export function VoteGate({ onCreditFull }: { onCreditFull: (credit: number) => v
             placeholder="Una riga, se vuoi. Sull'outfit, mai sulla persona."
             className="mt-3 w-full rounded-[10px] border border-line bg-panel px-3.5 py-2.5 text-[13.5px] text-gold placeholder:text-muted"
           />
-          <p className="mt-3 min-h-4 text-center text-[12.5px] text-bad">{message}</p>
+          <p aria-live="polite" className="mt-3 min-h-4 text-center text-[12.5px] text-bad">{message}</p>
         </div>
       ) : (
         <div className="mt-3.5 rounded-2xl border border-line bg-panel px-6 py-8 text-center">

@@ -136,7 +136,11 @@ export function JuryLive({
     <div>
       <div className="mb-3.5 flex items-baseline justify-between">
         <h3 className="font-display text-[22px] font-normal">Cinque persone stanno guardando</h3>
-        <span className="font-display text-2xl tabular-nums text-gold">
+        <span
+          aria-label={`${mm} minuti e ${ss} secondi rimasti`}
+          className="font-display text-2xl tabular-nums text-gold"
+          role="timer"
+        >
           {mm}:{ss}
         </span>
       </div>

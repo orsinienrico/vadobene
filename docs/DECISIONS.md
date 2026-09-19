@@ -28,3 +28,6 @@ Registro delle scelte non coperte da spec/brand (CLAUDE.md: scegli l'opzione pi�
 | 2026-09-19 | Webhook Stripe idempotente per design degli effetti: boost è `mode=payment` (pagabile una volta), pro è set plan='pro' idempotente | Stripe ritrasmette gli eventi; effetti ripetuti non cambiano lo stato |
 | 2026-09-19 | Email via fetch diretto a api.resend.com invece di SDK | Una sola chiamata POST, niente dipendenza; se non configurata, silenzioso in dev |
 | 2026-09-19 | PostHog caricato dinamicamente solo se `NEXT_PUBLIC_POSTHOG_KEY` presente | Zero peso nel bundle se analytics non attivo |
+| 2026-09-19 | Vercel cron su Hobby: `0 * * * *` e `30 * * * *` (1/ora ciascuno, minimo consentito) | Hobby limita i cron a 1×/giorno–1×/ora; per il giurì a 3 minuti serve un trigger esterno ogni 30s (documentato in RUNBOOK.md) |
+| 2026-09-19 | Playwright usa `channel: "chrome"` anche in CI (GitHub Actions ha Chrome preinstallato) | Evita il download CDN dei browser Playwright, bloccato anche nella rete aziendale |
+| 2026-09-19 | Lighthouse/a11y: contrasto e focus già a tema token (crema su blu ≥ 4.5:1 nel CSS brand), aria-live sui messaggi dinamici, role=timer | I token BRAND.md §4 garantiscono i rapporti di contrasto; i tag ARIA coprono gli aggiornamenti dinamici |

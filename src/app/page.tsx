@@ -36,7 +36,12 @@ export default function Home() {
 
       <footer className="border-t border-gold/10 px-6 pb-[60px] pt-10 text-center text-[12.5px] text-muted">
         <Brand size={18} />
-        <p className="mt-2">Lo specchio che non mente. © Orsini&amp;Co.</p>
+        <p className="mt-2">
+          Lo specchio che non mente. © Orsini&amp;Co. ·{" "}
+          <a href="/privacy" className="underline decoration-muted/40 hover:decoration-muted">
+            Privacy
+          </a>
+        </p>
       </footer>
     </>
   );

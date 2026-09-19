@@ -56,7 +56,7 @@ export function PhotoDrop({
           <img src={photo} alt="Anteprima outfit" className="mx-auto block max-h-[340px] max-w-full rounded-[10px]" />
         ) : (
           <div>
-            <div className="mb-2.5 text-3xl">◈</div>
+            <div className="mb-2.5 text-3xl" aria-hidden="true">◈</div>
             <h3 className="font-display text-[21px] font-normal">Manda la foto</h3>
             <p className="mt-1.5 text-sm text-muted">Scatta o scegli dalla galleria</p>
           </div>
