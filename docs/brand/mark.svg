@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 140" width="100" height="140" fill="none">
+  <!-- vado bene? — marchio ufficiale. Un solo colore: sostituire currentColor. -->
+  <g color="#F2E9D8"><path d="M15 42 C15 12 85 12 85 42 C85 66 50 62 50 90" fill="none" stroke="currentColor" stroke-width="21" stroke-linecap="round" stroke-linejoin="round"/><g fill="currentColor"><circle cx="50" cy="118" r="8.5"/><circle cx="32" cy="105" r="8"/><circle cx="68" cy="105" r="8"/><circle cx="32" cy="131" r="8"/><circle cx="68" cy="131" r="8"/></g></g>
+</svg>

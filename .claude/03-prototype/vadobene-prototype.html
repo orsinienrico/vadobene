@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0E2A36">
+<title>vado bene? — Lo specchio che non mente</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;1,9..144,400&family=Bricolage+Grotesque:opsz,wght@12..96,800&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0E2A36;
+  --panel:#143543;
+  --panel-2:#1B4353;
+  --line:rgba(242,233,216,.20);
+  --gold:#F2E9D8;
+  --gold-bright:#FFFFFF;
+  --ivory:#F2E9D8;
+  --muted:#8FA6AE;
+  --ok:#8FD3B3;
+  --warn:#F0C674;
+  --bad:#F19A88;
+  --display:'Fraunces',serif;
+  --logo:'Bricolage Grotesque',sans-serif;
+  --body:'Inter',sans-serif;
+  --mono:'IBM Plex Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;color-scheme:dark;background-color:#0E2A36;}
+body{background:var(--ink);color:var(--ivory);font-family:var(--body);font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased;min-height:100vh}
+#bgFill{position:fixed;inset:0;background-color:#0E2A36;z-index:-1;}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.001s!important;transition-duration:.001s!important}}
+
+/* ---------- logo ---------- */
+.brand{font-family:var(--logo);font-weight:800;letter-spacing:-.045em;display:inline-flex;align-items:baseline;color:var(--ivory);line-height:1}
+.qm{display:inline-block;width:.72em;height:1.01em;margin-left:.05em;align-self:flex-end;margin-bottom:-.03em;color:currentColor}
+.qm svg{width:100%;height:100%;overflow:visible;display:block}
+
+/* ---------- nav ---------- */
+nav{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:16px 24px;background:linear-gradient(to bottom,rgba(14,42,54,.94),rgba(14,42,54,0));backdrop-filter:blur(6px)}
+nav .brand{font-size:21px;cursor:pointer}
+.nav-cta{font-family:var(--body);font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink);background:var(--gold);border:none;border-radius:999px;padding:10px 20px;cursor:pointer;transition:background .2s}
+.nav-cta:hover{background:var(--gold-bright)}
+.nav-cta:focus-visible,button:focus-visible,a:focus-visible,[role="button"]:focus-visible,input:focus-visible{outline:2px solid var(--gold-bright);outline-offset:3px}
+
+/* ---------- hero ---------- */
+.hero{min-height:100svh;display:grid;grid-template-columns:1.1fr .9fr;align-items:center;gap:48px;padding:120px 8vw 64px;position:relative;overflow:hidden}
+.hero::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse 60% 45% at 78% 42%,rgba(127,200,192,.14),transparent 65%);pointer-events:none}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);margin-bottom:22px}
+h1{font-family:var(--display);font-weight:300;font-size:clamp(40px,5.4vw,72px);line-height:1.06;letter-spacing:-.01em}
+h1 .q{font-style:italic;font-weight:400;color:#fff}
+.hero-sub{max-width:46ch;margin-top:24px;color:var(--muted);font-size:17px}
+.hero-sub strong{color:var(--ivory);font-weight:500}
+.hero-actions{margin-top:36px;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.btn-primary{font-size:15px;font-weight:600;letter-spacing:.04em;color:var(--ink);background:var(--gold);border:none;border-radius:999px;padding:16px 34px;cursor:pointer;transition:transform .15s,background .2s}
+.btn-primary:hover{background:var(--gold-bright);transform:translateY(-1px)}
+.hero-note{font-size:13px;color:var(--muted)}
+.hero-note b{color:var(--ivory);font-weight:500}
+
+.specimen{justify-self:center;width:min(340px,86vw);perspective:900px}
+.card{background:linear-gradient(160deg,var(--panel-2),var(--panel));border:1px solid var(--line);border-radius:18px;padding:24px 22px;transform:rotate(2.5deg);transition:transform .5s cubic-bezier(.2,.8,.2,1);box-shadow:0 30px 80px rgba(0,0,0,.55)}
+.specimen:hover .card{transform:rotate(0deg) translateY(-6px)}
+.card-top{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:16px}
+.card-top .brand{font-size:15px}
+.card-occ{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.mini{display:flex;flex-direction:column;gap:8px}
+.mini .sent{align-self:flex-end;max-width:82%;background:rgba(242,233,216,.10);border:1px solid var(--line);border-radius:16px 16px 4px 16px;padding:9px 11px;font-size:13px}
+.mini .sys{align-self:center;font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);padding:2px 0}
+.rep{align-self:flex-start;max-width:86%;border-radius:16px 16px 16px 4px;padding:9px 12px;font-size:13px;display:flex;gap:9px;align-items:flex-start;background:rgba(0,0,0,.18);border:1px solid var(--line)}
+.rep .n{flex:none;width:20px;height:20px;border-radius:50%;font-family:var(--mono);font-size:10px;display:flex;align-items:center;justify-content:center;color:var(--ink);font-weight:500}
+.rep.yes .n{background:var(--ok)}.rep.tweak .n{background:var(--warn)}.rep.no .n{background:var(--bad)}
+.rep .t b{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:1px}
+.rep.yes .t b{color:var(--ok)}.rep.tweak .t b{color:var(--warn)}.rep.no .t b{color:var(--bad)}
+.rep .t{line-height:1.35}
+.card-res{margin:18px 0 4px;font-family:var(--display);font-weight:600;font-size:34px;line-height:1;color:var(--ivory)}
+.card-verdict{font-family:var(--mono);font-size:12px;letter-spacing:.22em;color:var(--ok);margin-bottom:14px}
+.card-quote{padding-top:14px;border-top:1px solid var(--line);font-family:var(--display);font-style:italic;font-weight:400;font-size:15px;line-height:1.45;color:var(--ivory)}
+.card-foot{margin-top:14px;font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+
+/* ---------- proof strip ---------- */
+.proof{display:flex;justify-content:center;gap:6vw;flex-wrap:wrap;padding:30px 8vw 64px;border-top:1px solid rgba(242,233,216,.10)}
+.proof div{text-align:center}
+.proof .k{font-family:var(--display);font-weight:600;font-size:26px;color:var(--ivory)}
+.proof .l{font-size:12.5px;color:var(--muted);letter-spacing:.04em}
+
+/* ---------- flow ---------- */
+.flow{max-width:680px;margin:0 auto;padding:72px 24px 110px}
+.flow-head{text-align:center;margin-bottom:44px}
+.flow-head h2{font-family:var(--display);font-weight:400;font-size:clamp(28px,3.6vw,40px)}
+.flow-head p{color:var(--muted);margin-top:10px;font-size:15px}
+.stage{display:none}
+.stage.active{display:block;animation:fade .45s ease}
+@keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+.drop{border:1.5px solid var(--line);border-radius:16px;background:var(--panel);padding:46px 24px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;width:100%}
+.drop:hover{border-color:var(--gold);background:var(--panel-2)}
+.drop .ic{font-size:30px;margin-bottom:10px}
+.drop h3{font-family:var(--display);font-weight:400;font-size:21px}
+.drop p{color:var(--muted);font-size:14px;margin-top:6px}
+.drop img{max-width:100%;max-height:340px;border-radius:10px;display:block;margin:0 auto}
+input[type=file]{display:none}
+
+.lab{font-family:var(--mono);font-size:11.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin:34px 0 14px}
+.chips{display:flex;flex-wrap:wrap;gap:10px}
+.chip{font-family:var(--body);font-size:14px;color:var(--ivory);background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:10px 18px;cursor:pointer;transition:all .18s}
+.chip:hover{border-color:var(--gold)}
+.chip.sel{background:var(--gold);color:var(--ink);border-color:var(--gold);font-weight:600}
+.analyze-btn{width:100%;margin-top:34px;font-size:16px;font-weight:600;letter-spacing:.04em;color:var(--ink);background:var(--gold);border:none;border-radius:14px;padding:18px;cursor:pointer;transition:background .2s,opacity .2s}
+.analyze-btn:disabled{opacity:.35;cursor:not-allowed}
+.analyze-btn:not(:disabled):hover{background:var(--gold-bright)}
+.hint{text-align:center;font-size:12.5px;color:var(--muted);margin-top:14px}
+
+.scan{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:40px 32px}
+.scan-line{display:flex;align-items:center;gap:14px;font-family:var(--mono);font-size:13.5px;color:var(--muted);padding:11px 0;opacity:0;transform:translateX(-8px);transition:all .4s}
+.scan-line.on{opacity:1;transform:none;color:var(--ivory)}
+.scan-line.done .dot{background:var(--gold);box-shadow:0 0 8px rgba(242,233,216,.6)}
+.dot{width:8px;height:8px;border-radius:50%;background:rgba(242,233,216,.25);flex-shrink:0;transition:all .3s}
+
+/* thread inside flow */
+.thread{display:flex;flex-direction:column;gap:12px}
+.thread .sent{align-self:flex-end;max-width:80%;background:var(--panel-2);border:1px solid var(--line);border-radius:18px 18px 4px 18px;padding:10px;font-size:15px}
+.thread .sent .ph{width:100%;aspect-ratio:3/4;border-radius:12px;overflow:hidden;background:var(--panel);margin-bottom:8px}
+.thread .sent .ph img,.thread .sent .ph svg{width:100%;height:100%;object-fit:cover;display:block}
+.thread .sent b{font-weight:600}
+.thread .sys{align-self:center;text-align:center;font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);max-width:40ch;padding:4px 0}
+.thread .rep{font-size:15px;padding:12px 16px;max-width:84%}
+.thread .rep .n{width:24px;height:24px;font-size:11px}
+.thread .rep .t b{font-size:10.5px}
+.aibox{background:linear-gradient(165deg,var(--panel-2),var(--panel));border:1px solid var(--line);border-radius:18px 18px 18px 4px;padding:22px 22px;max-width:92%;align-self:flex-start}
+.aibox .tag{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:10px}
+.aibox .h{font-family:var(--display);font-weight:600;font-size:34px;line-height:1;margin-bottom:10px}
+.aibox .h.yes{color:var(--ok)}.aibox .h.tweak{color:var(--warn)}.aibox .h.no{color:var(--bad)}
+.aibox p{color:var(--ivory);font-size:14.5px}
+.aibox .q{margin-top:12px;padding-top:12px;border-top:1px solid var(--line);font-family:var(--display);font-style:italic;font-size:16px}
+.act{display:flex;gap:12px;margin-top:6px;flex-wrap:wrap}
+.btn-gold{flex:1;min-width:130px;font-size:14px;font-weight:600;color:var(--ink);background:var(--gold);border:none;border-radius:12px;padding:15px;cursor:pointer}
+.btn-gold:hover{background:var(--gold-bright)}
+.btn-ghost{flex:1;min-width:130px;font-size:14px;font-weight:600;color:var(--ivory);background:transparent;border:1px solid var(--line);border-radius:12px;padding:15px;cursor:pointer}
+.btn-ghost:hover{border-color:var(--gold)}
+.demo-badge{text-align:center;font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+
+/* vote gate */
+.gate{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:28px 24px;text-align:center}
+.gate h3{font-family:var(--display);font-weight:400;font-size:22px}
+.gate p{color:var(--muted);font-size:14px;max-width:44ch;margin:8px auto 0}
+.credit-row{display:flex;justify-content:center;gap:8px;margin:20px 0 0}
+.credit-row span{width:34px;height:6px;border-radius:999px;background:rgba(242,233,216,.18)}
+.credit-row span.filled{background:var(--gold)}
+.vcard{background:linear-gradient(165deg,var(--panel-2),var(--panel));border:1px solid var(--line);border-radius:18px;padding:18px;margin-top:14px}
+.vcard .vph{width:100%;aspect-ratio:3/4;border-radius:12px;overflow:hidden;background:var(--panel);margin-bottom:14px}
+.vcard .vph svg{width:100%;height:100%;display:block}
+.vcard .q{font-size:15px;margin-bottom:12px;text-align:center}.vcard .q b{font-weight:600}
+.vbtns{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.vb{border:0;border-radius:12px;padding:14px 6px;font-family:var(--body);font-weight:600;font-size:13.5px;cursor:pointer;color:var(--ink)}
+.vb.yes{background:var(--ok)}.vb.tweak{background:var(--warn)}.vb.no{background:var(--bad)}
+.vnote{width:100%;margin-top:12px;background:var(--panel);border:1px solid var(--line);border-radius:10px;color:var(--ivory);font-family:var(--body);font-size:13.5px;padding:11px 13px}
+.vnote::placeholder{color:var(--muted)}
+.vmsg{text-align:center;font-size:12.5px;color:var(--bad);margin-top:12px;min-height:16px}
+
+/* jury live */
+.jhead{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px}
+.jhead h3{font-family:var(--display);font-weight:400;font-size:22px}
+.jtimer{font-family:var(--display);font-size:24px;color:var(--gold);font-variant-numeric:tabular-nums}
+.jbar{display:flex;gap:8px;margin:0 0 18px}
+.jbar span{flex:1;height:8px;border-radius:999px;background:rgba(242,233,216,.18);transition:background .3s}
+.jbar span.yes{background:var(--ok)}.jbar span.tweak{background:var(--warn)}.jbar span.no{background:var(--bad)}
+
+/* final card = the same tilted-card language, not tilted */
+.verdict-card{background:linear-gradient(165deg,var(--panel-2),var(--panel));border:1px solid var(--line);border-radius:20px;padding:30px 28px;box-shadow:0 30px 80px rgba(0,0,0,.45)}
+.v-top{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--line);padding-bottom:16px}
+.v-top .brand{font-size:16px}
+.v-occ{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.v-score{font-family:var(--display);font-weight:600;font-size:44px;line-height:1;margin:24px 0 10px}
+.v-score.yes{color:var(--ok)}.v-score.tweak{color:var(--warn)}.v-score.no{color:var(--bad)}
+.v-dots{display:flex;gap:6px;margin-bottom:14px}
+.v-dots span{width:10px;height:10px;border-radius:50%}
+.v-sub{color:var(--ivory);font-size:14.5px}
+.v-sub b{color:var(--gold)}
+.v-quote{margin-top:18px;padding:16px 18px;background:rgba(242,233,216,.06);border-left:2px solid var(--gold);font-family:var(--display);font-style:italic;font-size:16px;line-height:1.5}
+.v-actions{display:flex;gap:12px;margin-top:24px;flex-wrap:wrap}
+.v-foot{margin-top:16px;font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);text-align:center}
+
+.manifesto{max-width:640px;margin:0 auto;padding:80px 24px;text-align:center;border-top:1px solid rgba(242,233,216,.10)}
+.manifesto h2{font-family:var(--display);font-weight:400;font-style:italic;font-size:clamp(24px,3vw,34px);line-height:1.3}
+.manifesto p{color:var(--muted);margin-top:18px;font-size:15px}
+footer{text-align:center;padding:40px 24px 60px;color:var(--muted);font-size:12.5px;border-top:1px solid rgba(242,233,216,.10)}
+footer .brand{font-size:18px;margin-bottom:8px}
+
+@media (max-width:860px){
+  .hero{grid-template-columns:1fr;padding-top:110px;text-align:center}
+  .hero-sub{margin-left:auto;margin-right:auto}
+  .hero-actions{justify-content:center}
+  .specimen{margin-top:10px}
+}
+</style>
+</head>
+<body>
+<div id="bgFill"></div>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><symbol id="qmark" viewBox="0 0 100 140"><path d="M15 42 C15 12 85 12 85 42 C85 66 50 62 50 90" fill="none" stroke="currentColor" stroke-width="21" stroke-linecap="round" stroke-linejoin="round"/><g fill="currentColor"><circle cx="50" cy="118" r="8.5"/><circle cx="32" cy="105" r="8"/><circle cx="68" cy="105" r="8"/><circle cx="32" cy="131" r="8"/><circle cx="68" cy="131" r="8"/></g></symbol></defs></svg>
+
+<nav>
+  <span class="brand" id="navLogo">vado bene<span class="qm"><svg viewBox="0 0 100 140"><use href="#qmark"/></svg></span></span>
+  <button class="nav-cta" onclick="goFlow()">Prova ora</button>
+</nav>
+
+<header class="hero" id="top">
+  <div>
+    <p class="eyebrow">Non un algoritmo. Cinque persone.</p>
+    <h1>La domanda che fai<br>sulla porta di casa,<br><span class="q">a chi non ti conosce.</span></h1>
+    <p class="hero-sub">Manda la foto, dì per cosa. Un primo parere in cinque secondi; poi, se vuoi la verità intera, <strong>cinque persone vere</strong> ti rispondono in tre minuti — alla cieca, senza doverti essere gentili.</p>
+    <div class="hero-actions">
+      <button class="btn-primary" onclick="goFlow()">Vado bene? — provalo</button>
+      <p class="hero-note">Gratis, senza registrazione.<br><b>Si giudica l'outfit, mai la persona.</b></p>
+    </div>
+  </div>
+
+  <div class="specimen" aria-hidden="true">
+    <div class="card">
+      <div class="card-top">
+        <span class="brand">vado bene<span class="qm"><svg viewBox="0 0 100 140"><use href="#qmark"/></svg></span></span>
+        <span class="card-occ">Colloquio</span>
+      </div>
+      <div class="mini">
+        <div class="sent"><b>Vado bene?</b> Colloquio in banca, domani.</div>
+        <div class="sys">Inviato a 5 persone</div>
+        <div class="rep yes"><span class="n">1</span><span class="t"><b>Funziona</b>Vai tranquillo.</span></div>
+        <div class="rep tweak"><span class="n">2</span><span class="t"><b>Con una modifica</b>Le scarpe no, cambia solo quelle.</span></div>
+        <div class="rep yes"><span class="n">3</span><span class="t"><b>Funziona</b>Sembri già assunto. Tranne ai piedi.</span></div>
+      </div>
+      <div class="card-res">Sì. 4 su 5.</div>
+      <div class="card-verdict">MODIFICA PIÙ VOTATA · LE SCARPE</div>
+      <p class="card-quote">"Sembri già assunto. Tranne ai piedi."</p>
+      <p class="card-foot">vadobene.app — cinque persone vere, alla cieca</p>
+    </div>
+  </div>
+</header>
+
+<section class="proof">
+  <div><p class="k">5</p><p class="l">persone vere per risposta</p></div>
+  <div><p class="k">3 min</p><p class="l">dalla foto alla risposta</p></div>
+  <div><p class="k">0</p><p class="l">giudizi sul corpo. Solo outfit.</p></div>
+</section>
+
+<main class="flow" id="flow">
+  <div class="flow-head">
+    <h2 id="flowTitle">Il tuo riflesso</h2>
+    <p id="flowSub">Foto, occasione, trenta secondi.</p>
+  </div>
+
+  <!-- STAGE 1: input -->
+  <section class="stage active" id="stage-input">
+    <div class="drop" id="drop" role="button" tabindex="0" aria-label="Aggiungi il tuo outfit">
+      <div id="drop-empty">
+        <div class="ic">◈</div>
+        <h3>Manda la foto</h3>
+        <p>Scatta o scegli dalla galleria</p>
+      </div>
+      <img id="preview" alt="Anteprima outfit" style="display:none">
+    </div>
+    <input type="file" id="file" accept="image/*">
+
+    <p class="lab">Per cosa?</p>
+    <div class="chips" id="chips">
+      <button class="chip">Colloquio</button>
+      <button class="chip">Matrimonio</button>
+      <button class="chip">Primo appuntamento</button>
+      <button class="chip">Ufficio</button>
+      <button class="chip">Aperitivo</button>
+      <button class="chip">Cena con i suoceri</button>
+      <button class="chip">Laurea</button>
+    </div>
+
+    <button class="analyze-btn" id="analyze" disabled onclick="startAnalysis()">Vado bene?</button>
+    <p class="hint" id="hint">Aggiungi una foto e scegli l'occasione per continuare</p>
+  </section>
+
+  <!-- STAGE 2: scan -->
+  <section class="stage" id="stage-scan">
+    <div class="scan">
+      <div class="scan-line"><span class="dot"></span>Lettura dell'outfit</div>
+      <div class="scan-line"><span class="dot"></span>Confronto con l'occasione</div>
+      <div class="scan-line"><span class="dot"></span>Controllo coerenza</div>
+      <div class="scan-line"><span class="dot"></span>Primo parere</div>
+    </div>
+  </section>
+
+  <!-- STAGE 3: sent + AI reply -->
+  <section class="stage" id="stage-ai">
+    <div class="thread">
+      <div class="sent"><div class="ph" id="sentPh"></div><b>Vado bene?</b> <span id="ai-occ"></span>.</div>
+      <div class="aibox" id="aibox"></div>
+      <div class="sys">Questo è un algoritmo · quello che conta arriva dalle persone</div>
+      <div class="act"><button class="btn-gold" onclick="requestJury()">Chiedi a cinque persone vere</button></div>
+    </div>
+  </section>
+
+  <!-- STAGE 4: vote to unlock -->
+  <section class="stage" id="stage-gate">
+    <div class="gate">
+      <h3>Per ricevere cinque pareri, dai cinque voti</h3>
+      <p>Nessuna folla in attesa: solo persone che si aiutano a vicenda. Un tocco, senza pensarci troppo.</p>
+      <div class="credit-row" id="creditRow"><span></span><span></span><span></span><span></span><span></span></div>
+    </div>
+    <div class="vcard" id="vcard"></div>
+  </section>
+
+  <!-- STAGE 5: five people live -->
+  <section class="stage" id="stage-jury">
+    <div class="jhead"><h3>Cinque persone stanno guardando</h3><span class="jtimer" id="jtimer">3:00</span></div>
+    <div class="jbar" id="jbar"><span></span><span></span><span></span><span></span><span></span></div>
+    <div class="thread" id="replies"></div>
+    <p class="hint" style="margin-top:18px">Vedono l'outfit e l'occasione, non te.</p>
+  </section>
+
+  <!-- STAGE 6: final -->
+  <section class="stage" id="stage-final">
+    <div class="verdict-card" id="final"></div>
+  </section>
+</main>
+
+<section class="manifesto">
+  <h2>"Un outfit non è giusto o sbagliato in assoluto. È giusto o sbagliato per un contesto — e a dirlo devono essere gli altri, non un algoritmo."</h2>
+  <p>vado bene? non giudica le persone. Chiede a cinque persone vere, alla cieca, se l'outfit funziona per quell'occasione.</p>
+</section>
+
+<footer>
+  <div class="brand">vado bene<span class="qm"><svg viewBox="0 0 100 140"><use href="#qmark"/></svg></span></div>
+  <p>Lo specchio che non mente. © Orsini&amp;Co. — prototipo dimostrativo, le foto non lasciano il tuo dispositivo.</p>
+</footer>
+
+<script>
+let hasPhoto=false, occasion=null, credit=0, photoData=null;
+const NEED=5;
+let aiVerdict=null, jury=[], juryTimerHandle=null, timeLeft=180;
+
+const AI = {
+  "Colloquio": { v:"tweak", t:"Le scarpe sono troppo informali: un paio più pulite e chiuse.", l:"Sembri già assunto. Tranne ai piedi." },
+  "Matrimonio": { v:"yes", t:null, l:"Elegante senza rubare la scena agli sposi." },
+  "Primo appuntamento": { v:"tweak", t:"Un capo in meno: togli lo strato esterno.", l:"Funziona, ma si vede che ci hai provato." },
+  "Ufficio": { v:"yes", t:null, l:"Credibile alle 9 e ancora credibile alle 18." },
+  "Aperitivo": { v:"yes", t:null, l:"Rilassato nel modo giusto." },
+  "Cena con i suoceri": { v:"tweak", t:"Colori troppo scuri: alleggerisci con un capo chiaro.", l:"Rispettoso, forse troppo." },
+  "Laurea": { v:"no", t:"Serve almeno una giacca. È il tuo giorno.", l:"Va bene per festeggiare dopo. Non per la discussione." }
+};
+const NOTES = {
+  yes: ["Vai tranquillo.","Sì, senza pensarci.","Mi piace il colore.","Giusto per quell'occasione.","Semplice e centrato."],
+  tweak: ["Le scarpe no, cambia solo quelle.","Un accessorio in meno.","Cintura più scura e sei a posto.","Sopra sì, sotto un po' meno.","Cambia i pantaloni, il resto va."],
+  no: ["Troppo casual per quell'occasione.","Non per quel contesto.","Rischi di sembrare fuori posto.","Per quello ci vuole di più."]
+};
+const LBL={yes:"Funziona",tweak:"Con una modifica",no:"No"};
+const OCC = Object.keys(AI);
+const PAL = ["#C9A96A","#7A5B3B","#4A5D4E","#8C8578","#2B2A26","#B79C6E","#6B5A78","#C9C0AC","#3E6B77","#7A4B3A"];
+function rnd(a){return a[Math.floor(Math.random()*a.length)]}
+function outfitSVG(){
+  const top=rnd(PAL), bot=rnd(PAL), shoe=rnd(["#1A1710","#7A5B3B","#E6DCC6","#3E3A32"]);
+  const jacket=Math.random()>.5, tie=Math.random()>.7, skirt=Math.random()>.6;
+  return `<svg viewBox="0 0 300 400" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" preserveAspectRatio="xMidYMid slice" role="img" aria-label="outfit anonimo">
+    <rect width="300" height="400" fill="#143543"/><circle cx="150" cy="70" r="30" fill="#3E5A66"/><rect x="140" y="98" width="20" height="16" fill="#3E5A66"/>
+    <path d="M95 118 h110 l18 120 h-146 z" fill="${top}"/>
+    ${jacket?`<path d="M95 118 l25 0 l30 120 h-73 z" fill="${top}" opacity=".7"/><path d="M205 118 l-25 0 l-30 120 h73 z" fill="${top}" opacity=".7"/>`:""}
+    ${tie?`<path d="M144 118 h12 l-2 60 l-4 10 l-4 -10 z" fill="#8C4A3A"/>`:""}
+    ${skirt?`<path d="M105 238 h90 l20 90 h-130 z" fill="${bot}"/>`:`<path d="M105 238 h40 v130 h-30 z" fill="${bot}"/><path d="M155 238 h40 l-10 130 h-30 z" fill="${bot}"/>`}
+    <rect x="108" y="366" width="38" height="16" rx="6" fill="${shoe}"/><rect x="154" y="366" width="38" height="16" rx="6" fill="${shoe}"/></svg>`;
+}
+const LOGO=`<span class="brand">vado bene<span class="qm"><svg viewBox="0 0 100 140"><use href="#qmark"/></svg></span></span>`;
+
+document.getElementById('navLogo').addEventListener('click',()=>window.scrollTo({top:0,behavior:'smooth'}));
+function goFlow(){document.getElementById('flow').scrollIntoView({behavior:'smooth'});}
+function show(id){document.querySelectorAll('.stage').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
+
+/* iOS-safe: div + JS click(), never a label */
+const file=document.getElementById('file');
+const dropZone=document.getElementById('drop');
+dropZone.addEventListener('click',()=>file.click());
+dropZone.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();file.click();}});
+const preview=document.getElementById('preview');
+const dropEmpty=document.getElementById('drop-empty');
+const analyzeBtn=document.getElementById('analyze');
+const hint=document.getElementById('hint');
+file.addEventListener('change',e=>{
+  const f=e.target.files[0]; if(!f)return;
+  const r=new FileReader();
+  r.onload=ev=>{photoData=ev.target.result;preview.src=photoData;preview.style.display='block';dropEmpty.style.display='none';hasPhoto=true;check();};
+  r.readAsDataURL(f);
+});
+document.querySelectorAll('#chips .chip').forEach(c=>{
+  c.addEventListener('click',()=>{
+    document.querySelectorAll('#chips .chip').forEach(x=>x.classList.remove('sel'));
+    c.classList.add('sel'); occasion=c.textContent; check();
+  });
+});
+function check(){
+  const ok=hasPhoto&&occasion;
+  analyzeBtn.disabled=!ok;
+  hint.textContent=ok?'Tutto pronto.':(!hasPhoto?'Aggiungi una foto per continuare':"Scegli l'occasione per continuare");
+}
+
+function startAnalysis(){
+  show('stage-scan'); goFlow();
+  const lines=document.querySelectorAll('.scan-line');
+  lines.forEach(l=>l.classList.remove('on','done'));
+  lines.forEach((l,i)=>{ setTimeout(()=>l.classList.add('on'), i*550); setTimeout(()=>l.classList.add('done'), i*550+450); });
+  setTimeout(showAI, lines.length*550+650);
+}
+function showAI(){
+  aiVerdict=AI[occasion];
+  document.getElementById('sentPh').innerHTML=`<img src="${photoData}" alt="il tuo outfit">`;
+  document.getElementById('ai-occ').textContent=occasion;
+  const head={yes:"Sì.",tweak:"Sì, con una modifica.",no:"No."}[aiVerdict.v];
+  document.getElementById('aibox').innerHTML=`<span class="tag">Primo parere · automatico</span><div class="h ${aiVerdict.v}">${head}</div>${aiVerdict.t?`<p>${aiVerdict.t}</p>`:""}<div class="q">${aiVerdict.l}</div>`;
+  document.getElementById('flowTitle').textContent='Inviato';
+  show('stage-ai'); goFlow();
+}
+
+function requestJury(){
+  if(credit>=NEED){ startJury(); return; }
+  renderCredit(); voteCard();
+  document.getElementById('flowTitle').textContent='Prima rispondi tu';
+  show('stage-gate'); goFlow();
+}
+function renderCredit(){document.querySelectorAll('#creditRow span').forEach((s,i)=>s.classList.toggle('filled',i<credit));}
+function voteCard(){
+  const o=rnd(OCC);
+  const c=document.getElementById('vcard');
+  c.innerHTML=`<div class="vph">${outfitSVG()}</div><div class="q"><b>Vado bene?</b> ${o}.</div>
+    <div class="vbtns"><button class="vb yes">Funziona</button><button class="vb tweak">Modifica</button><button class="vb no">No</button></div>
+    <input class="vnote" maxlength="80" placeholder="Una riga, se vuoi. Sull'outfit, mai sulla persona."><div class="vmsg"></div>`;
+  c.querySelectorAll('.vb').forEach(b=>b.addEventListener('click',()=>{
+    const note=c.querySelector('.vnote').value.trim();
+    if(note&&/(grass|magr|brutt|vecchi|cicci|corpo|fisico)/i.test(note)){ c.querySelector('.vmsg').textContent="Parla della persona, non dell'outfit: non verrà mostrata."; return; }
+    credit++; renderCredit();
+    if(credit>=NEED){ setTimeout(startJury,500); } else { setTimeout(voteCard,250); }
+  }));
+}
+
+function startJury(){
+  credit=Math.max(0,credit-NEED); jury=[]; timeLeft=180;
+  document.getElementById('replies').innerHTML='';
+  document.querySelectorAll('#jbar span').forEach(s=>s.className='');
+  document.getElementById('jtimer').textContent='3:00';
+  document.getElementById('flowTitle').textContent='Stanno guardando';
+  show('stage-jury'); goFlow();
+  clearInterval(juryTimerHandle);
+  juryTimerHandle=setInterval(()=>{ timeLeft--; document.getElementById('jtimer').textContent=Math.floor(timeLeft/60)+':'+String(timeLeft%60).padStart(2,'0'); if(timeLeft<=0){clearInterval(juryTimerHandle);finishJury();} },1000);
+  const base=aiVerdict.v,pool=[];
+  for(let i=0;i<5;i++){const r=Math.random();pool.push(r<.62?base:(r<.87?(base==='yes'?'tweak':base==='no'?'tweak':'yes'):(base==='no'?'yes':'no')));}
+  let delay=900;
+  pool.forEach((v,i)=>{ delay+=1400+Math.random()*2000; setTimeout(()=>arrive(v,i),delay); });
+}
+function replyHTML(v,n,note){return `<div class="rep ${v}"><span class="n">${n}</span><span class="t"><b>${LBL[v]}</b>${note||""}</span></div>`;}
+function arrive(v,i){
+  const note=Math.random()>.35?rnd(NOTES[v]):null;
+  jury.push({v,note});
+  document.querySelectorAll('#jbar span')[i].className=v;
+  document.getElementById('replies').insertAdjacentHTML('beforeend',replyHTML(v,i+1,note));
+  if(jury.length===5){ clearInterval(juryTimerHandle); setTimeout(finishJury,800); }
+}
+function finishJury(){
+  const c={yes:0,tweak:0,no:0}; jury.forEach(j=>c[j.v]++);
+  const res=c.yes>=3?'yes':(c.no>=3?'no':'tweak');
+  const head={yes:`Sì. ${c.yes} su 5.`,tweak:`Sì, con una modifica.`,no:`No. ${c.no} su 5.`}[res];
+  const line=res==='tweak'?`${c.yes+c.tweak} su 5 dicono che funziona, ${c.tweak} chiedono una modifica.`:res==='yes'?`Funziona così com'è.`:`Non per questa occasione.`;
+  const tw=jury.find(j=>j.v==='tweak'&&j.note); const qt=jury.find(j=>j.note);
+  const secs=95+Math.floor(Math.random()*40);
+  const dots=jury.map(j=>`<span style="background:${j.v==='yes'?'#8FD3B3':j.v==='tweak'?'#F0C674':'#F19A88'}"></span>`).join('');
+  document.getElementById('final').innerHTML=`<div class="v-top">${LOGO}<span class="v-occ">${occasion}</span></div>
+    <div class="v-score ${res}">${head}</div><div class="v-dots">${dots}</div>
+    <p class="v-sub">${line}${tw?` Modifica più votata: <b>${tw.note}</b>`:""}</p>
+    ${qt?`<div class="v-quote">“${qt.note}”</div>`:""}
+    <div class="v-actions"><button class="btn-gold" onclick="shareVerdict()">Condividi</button><button class="btn-ghost" onclick="resetFlow()">Nuovo look</button></div>
+    <p class="v-foot">Cinque persone vere · alla cieca · ${secs} secondi</p>`;
+  window._lastFinal={occasion,head,line};
+  document.getElementById('flowTitle').textContent='Ecco.';
+  show('stage-final'); goFlow();
+}
+function shareVerdict(){
+  const f=window._lastFinal||{};
+  const txt=`vado bene? — ${f.occasion}. ${f.head} ${f.line} — vadobene.app`;
+  try{ if(navigator.share){ navigator.share({title:'vado bene?',text:txt}); return; } }catch(e){}
+  try{ navigator.clipboard.writeText(txt); flashHint('Copiato'); }catch(e){ flashHint('Copia il testo della card'); }
+}
+function flashHint(m){const h=document.getElementById('flowSub');const p=h.textContent;h.textContent=m;setTimeout(()=>{h.textContent=p;},1800);}
+function resetFlow(){
+  hasPhoto=false; occasion=null; photoData=null; file.value='';
+  preview.style.display='none'; dropEmpty.style.display='';
+  document.querySelectorAll('#chips .chip').forEach(x=>x.classList.remove('sel'));
+  document.getElementById('flowTitle').textContent='Il tuo riflesso';
+  check(); show('stage-input'); goFlow();
+}
+</script>
+</body>
+</html>

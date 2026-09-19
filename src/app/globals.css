@@ -1,0 +1,52 @@
+@import "tailwindcss";
+
+/* vado bene? — token da docs/BRAND.md §4 e §5. Nessun altro colore. */
+@theme {
+  --color-ink: #0e2a36;
+  --color-panel: #143543;
+  --color-panel-2: #1b4353;
+  --color-gold: #f2e9d8;
+  --color-gold-bright: #ffffff;
+  --color-muted: #8fa6ae;
+  --color-ok: #8fd3b3;
+  --color-warn: #f0c674;
+  --color-bad: #f19a88;
+  --color-line: rgba(242, 233, 216, 0.2);
+
+  --font-display: var(--font-display), serif;
+  --font-logo: var(--font-logo), sans-serif;
+  --font-body: var(--font-body), sans-serif;
+  --font-mono: var(--font-mono), monospace;
+}
+
+:root {
+  --line: rgba(242, 233, 216, 0.2);
+  --gold: #f2e9d8;
+  --gold-bright: #ffffff;
+  --muted: #8fa6ae;
+  --ok: #8fd3b3;
+  --warn: #f0c674;
+  --bad: #f19a88;
+}
+
+/* iOS Safari: colore fisso dietro tutto, mai trasparenze sul body */
+#bgFill {
+  position: fixed;
+  inset: 0;
+  background-color: #0e2a36;
+  z-index: -1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001s !important;
+    transition-duration: 0.001s !important;
+  }
+}
+
+:focus-visible {
+  outline: 2px solid var(--gold-bright);
+  outline-offset: 3px;
+}

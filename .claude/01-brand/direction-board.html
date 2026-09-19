@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>VadoBene? — Tavola di direzione</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#FBF9F5;--ink:#1D2530;--blue:#1F4E5F;--blue-soft:#DDE8EC;--grey:#6F7780;--line:#E3E0DA;
+--yes:#2F7D5B;--yes-soft:#DDF0E6;--tweak:#C98F12;--tweak-soft:#FBEFD0;--no:#D0493C;--no-soft:#FADDD9;}
+*{margin:0;padding:0;box-sizing:border-box}
+html{color-scheme:light;background:var(--bg)}
+body{background:var(--bg);color:var(--ink);font-family:'Instrument Sans',sans-serif;padding:36px 18px 80px}
+.wrap{max-width:820px;margin:0 auto}
+.sec{margin-bottom:56px}
+.sec>h2{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:15px;color:var(--grey);margin-bottom:18px}
+.tile{background:#fff;border:1px solid var(--line);border-radius:20px;padding:36px 28px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:640px){.row{grid-template-columns:1fr}}
+
+/* ----- logo ----- */
+.word{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:clamp(44px,9vw,72px);letter-spacing:-.04em;line-height:1;display:inline-flex;align-items:baseline}
+.qm{position:relative;display:inline-block;width:.62em;height:1em;margin-left:.06em}
+.qm svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.mark{display:inline-block;width:88px;height:88px;border-radius:24px;background:var(--blue);position:relative}
+.mark svg{position:absolute;inset:18%;width:64%;height:64%;overflow:visible}
+.cap{font-size:13px;color:var(--grey);margin-top:16px;line-height:1.5;max-width:52ch}
+
+/* ----- palette ----- */
+.sw{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:10px}
+.sw div{border-radius:14px;height:88px;padding:10px;font-size:11px;display:flex;align-items:flex-end;border:1px solid var(--line)}
+
+/* ----- phone mock ----- */
+.phone{width:min(360px,100%);margin:0 auto;background:#fff;border:1px solid var(--line);border-radius:36px;padding:18px 14px 16px;box-shadow:0 20px 50px rgba(29,37,48,.08)}
+.ph-top{display:flex;justify-content:space-between;align-items:center;padding:6px 8px 14px}
+.ph-brand{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:20px;letter-spacing:-.03em;display:inline-flex;align-items:baseline}
+.ph-brand .qm{width:.62em;height:1em}
+.ph-timer{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:14px;color:var(--blue)}
+.thread{display:flex;flex-direction:column;gap:10px}
+.sent{align-self:flex-end;max-width:78%;background:var(--blue);color:#fff;border-radius:22px 22px 6px 22px;padding:10px;font-size:15px}
+.sent img,.sent .ph-photo{width:100%;aspect-ratio:3/4;border-radius:14px;background:linear-gradient(160deg,#4a6a78,#2c4854);display:block;margin-bottom:8px}
+.sent b{font-weight:600}
+.sys{align-self:center;font-size:12px;color:var(--grey);padding:4px 0}
+.rep{align-self:flex-start;max-width:82%;border-radius:22px 22px 22px 6px;padding:11px 14px;font-size:15px;position:relative;display:flex;gap:10px;align-items:flex-start;animation:pop .35s cubic-bezier(.2,1,.3,1) both}
+.rep .n{flex:none;width:24px;height:24px;border-radius:50%;font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:12px;display:flex;align-items:center;justify-content:center;color:#fff}
+.rep.yes{background:var(--yes-soft)}.rep.yes .n{background:var(--yes)}
+.rep.tweak{background:var(--tweak-soft)}.rep.tweak .n{background:var(--tweak)}
+.rep.no{background:var(--no-soft)}.rep.no .n{background:var(--no)}
+.rep .t{line-height:1.35}.rep .t b{display:block;font-weight:600;font-size:13px;margin-bottom:2px}
+.rep:nth-child(3){animation-delay:.2s}.rep:nth-child(4){animation-delay:.5s}.rep:nth-child(5){animation-delay:.8s}.rep:nth-child(6){animation-delay:1.1s}.rep:nth-child(7){animation-delay:1.4s}
+@keyframes pop{from{opacity:0;transform:translateY(8px) scale(.97)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.rep{animation:none}}
+.sum{margin-top:14px;background:var(--ink);color:#fff;border-radius:22px;padding:16px 18px}
+.sum .big{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:28px;letter-spacing:-.03em;line-height:1.05}
+.sum .dots{display:flex;gap:5px;margin:10px 0 8px}
+.sum .dots span{width:10px;height:10px;border-radius:50%}
+.sum p{font-size:13px;opacity:.8}
+.compose{margin-top:14px;display:flex;gap:8px;align-items:center;border:1.5px solid var(--line);border-radius:999px;padding:8px 8px 8px 16px;font-size:15px;color:var(--grey)}
+.compose .send{margin-left:auto;background:var(--blue);color:#fff;border-radius:999px;padding:8px 14px;font-weight:600;font-size:13px}
+
+/* ----- principles ----- */
+.pr{display:grid;gap:12px}
+.pr div{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px 18px;font-size:14px;line-height:1.5}
+.pr b{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;display:block;margin-bottom:4px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<section class="sec">
+  <h2>1 · Il marchio — il punto del "?" sono cinque persone</h2>
+  <div class="tile" style="text-align:center">
+    <div class="word">vado bene<span class="qm"><svg viewBox="0 0 62 100" fill="none" stroke="#1D2530" stroke-width="13" stroke-linecap="round">
+      <path d="M10 30 C10 8 52 8 52 30 C52 48 31 46 31 66"/>
+      <g fill="#1F4E5F" stroke="none"><circle cx="31" cy="90" r="6"/><circle cx="16" cy="90" r="6"/><circle cx="46" cy="90" r="6"/><circle cx="23.5" cy="79" r="5"/><circle cx="38.5" cy="79" r="5"/></g>
+    </svg></span></div>
+    <p class="cap" style="margin:18px auto 0">Tutto minuscolo, come lo scriveresti in un messaggio. Il punto interrogativo resta — è il dubbio, è il brand. Solo il suo punto cambia: diventa cinque puntini, le cinque persone che rispondono. Una domanda sola, cinque risposte. Si legge senza spiegazione.</p>
+  </div>
+  <div class="row" style="margin-top:18px">
+    <div class="tile" style="text-align:center">
+      <span class="mark"><svg viewBox="0 0 62 100" fill="none" stroke="#fff" stroke-width="13" stroke-linecap="round">
+        <path d="M10 30 C10 8 52 8 52 30 C52 48 31 46 31 66"/>
+        <g fill="#fff" stroke="none"><circle cx="31" cy="90" r="6"/><circle cx="16" cy="90" r="6"/><circle cx="46" cy="90" r="6"/><circle cx="23.5" cy="79" r="5"/><circle cx="38.5" cy="79" r="5"/></g>
+      </svg></span>
+      <p class="cap" style="margin:14px auto 0">Icona app: solo il "?" a cinque punti, su blu profondo. Funziona a 16px perché è una forma sola.</p>
+    </div>
+    <div class="tile" style="text-align:center;background:var(--blue)">
+      <div class="word" style="color:#fff;font-size:40px">vado bene<span class="qm"><svg viewBox="0 0 62 100" fill="none" stroke="#fff" stroke-width="13" stroke-linecap="round">
+        <path d="M10 30 C10 8 52 8 52 30 C52 48 31 46 31 66"/>
+        <g fill="#fff" stroke="none"><circle cx="31" cy="90" r="6"/><circle cx="16" cy="90" r="6"/><circle cx="46" cy="90" r="6"/><circle cx="23.5" cy="79" r="5"/><circle cx="38.5" cy="79" r="5"/></g>
+      </svg></span></div>
+      <p class="cap" style="margin:14px auto 0;color:#cfdde3">Versione invertita per splash e social.</p>
+    </div>
+  </div>
+</section>
+
+<section class="sec">
+  <h2>2 · Palette — un blu che non è "tech", tre colori che sono risposte</h2>
+  <div class="tile">
+    <div class="sw">
+      <div style="background:#FBF9F5">#FBF9F5 sfondo</div>
+      <div style="background:#1D2530;color:#fff">#1D2530 testo</div>
+      <div style="background:#1F4E5F;color:#fff">#1F4E5F blu · brand, il tuo messaggio</div>
+      <div style="background:#DDF0E6">#2F7D5B sì</div>
+      <div style="background:#FBEFD0">#C98F12 con una modifica</div>
+      <div style="background:#FADDD9">#D0493C no</div>
+    </div>
+    <p class="cap">Niente nero+oro, niente crema+terracotta. Il blu profondo è il colore del tuo messaggio (come il denim: abbigliamento, quotidiano, umano). I tre colori esistono solo come risposte — non decorano mai. Font: Bricolage Grotesque per il brand e i titoli (ha carattere, non è un default), Instrument Sans per tutto il resto. Niente serif editoriale: non è una rivista, è una conversazione.</p>
+  </div>
+</section>
+
+<section class="sec">
+  <h2>3 · La schermata chiave — mandi "vado bene?", rispondono in cinque</h2>
+  <div class="phone">
+    <div class="ph-top">
+      <span class="ph-brand">vado bene<span class="qm"><svg viewBox="0 0 62 100" fill="none" stroke="#1D2530" stroke-width="13" stroke-linecap="round"><path d="M10 30 C10 8 52 8 52 30 C52 48 31 46 31 66"/><g fill="#1F4E5F" stroke="none"><circle cx="31" cy="90" r="6"/><circle cx="16" cy="90" r="6"/><circle cx="46" cy="90" r="6"/><circle cx="23.5" cy="79" r="5"/><circle cx="38.5" cy="79" r="5"/></g></svg></span></span>
+      <span class="ph-timer">2:41</span>
+    </div>
+    <div class="thread">
+      <div class="sent"><div class="ph-photo"></div><b>Vado bene?</b> Colloquio in banca, domani alle 10.</div>
+      <div class="sys">Inviato a 5 persone che non ti conoscono</div>
+      <div class="rep yes"><span class="n">1</span><span class="t"><b>Funziona</b>Vai tranquillo.</span></div>
+      <div class="rep tweak"><span class="n">2</span><span class="t"><b>Con una modifica</b>Le scarpe no, cambia solo quelle.</span></div>
+      <div class="rep yes"><span class="n">3</span><span class="t"><b>Funziona</b></span></div>
+      <div class="rep yes"><span class="n">4</span><span class="t"><b>Funziona</b>Sembri già assunto. Tranne ai piedi.</span></div>
+      <div class="rep yes"><span class="n">5</span><span class="t"><b>Funziona</b></span></div>
+    </div>
+    <div class="sum">
+      <div class="big">Sì. 4 su 5.</div>
+      <div class="dots"><span style="background:#2F7D5B"></span><span style="background:#C98F12"></span><span style="background:#2F7D5B"></span><span style="background:#2F7D5B"></span><span style="background:#2F7D5B"></span></div>
+      <p>Una modifica suggerita: le scarpe. Condividi →</p>
+    </div>
+    <div class="compose">Vado bene? <span class="send">Foto</span></div>
+  </div>
+  <p class="cap" style="margin:18px auto 0;text-align:center">Il modello mentale è quello che la gente usa già: la foto nel gruppo. Ma qui chi risponde non ti conosce, non deve esserti gentile, e ha tre minuti. Le risposte arrivano una alla volta, numerate, colorate solo dal verdetto. La sintesi in fondo è la card che condividi.</p>
+</section>
+
+<section class="sec">
+  <h2>4 · Tre principi che guidano ogni schermata</h2>
+  <div class="pr">
+    <div><b>Si scrive come si parla.</b> Il bottone principale non dice "Analizza": dice "Vado bene?". Le risposte non sono "verdetti", sono messaggi. Tutto minuscolo dove possibile.</div>
+    <div><b>Il colore è sempre una risposta.</b> Verde, ambra, rosso compaiono solo dentro le bolle dei cinque. Il resto è blu del tuo messaggio, testo, sfondo. Nessun gradiente, nessun bagliore.</div>
+    <div><b>Un solo momento animato.</b> Le cinque risposte che entrano una dopo l'altra. Tutto il resto è fermo. È l'unica cosa che deve emozionare, ed è quella che il prodotto fa davvero.</div>
+  </div>
+</section>
+
+</div>
+</body>
+</html>
