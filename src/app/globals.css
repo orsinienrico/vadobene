@@ -37,6 +37,21 @@
   z-index: -1;
 }
 
+/* fade dei palchi del flusso (prototipo @keyframes fade) */
+@keyframes vb-fade {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.animate-fade {
+  animation: vb-fade 0.45s ease;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
