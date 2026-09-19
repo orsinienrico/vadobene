@@ -6,16 +6,18 @@ import { OccasionChips } from "./OccasionChips";
 import { ScanLines } from "./ScanLines";
 import { ThreadSent } from "./ThreadSent";
 import { AiReply } from "./AiReply";
+import { VoteGate } from "./VoteGate";
 import type { AiVerdict } from "@/lib/contracts";
 
 type Occasion = { slug: string; label_it: string };
 
-type Stage = "input" | "scan" | "ai";
+type Stage = "input" | "scan" | "ai" | "gate";
 
 const TITLES: Record<Stage, { h: string; sub: string }> = {
   input: { h: "Il tuo riflesso", sub: "Foto, occasione, trenta secondi." },
   scan: { h: "Inviato", sub: "Cinque secondi, non di più." },
   ai: { h: "Inviato", sub: "Cinque secondi, non di più." },
+  gate: { h: "Prima rispondi tu", sub: "Cinque voti, poi la tua domanda entra in coda." },
 };
 
 /**
@@ -120,14 +122,23 @@ export function Flow() {
             <button
               type="button"
               className="min-w-[130px] flex-1 rounded-xl bg-gold px-4 py-[15px] text-sm font-semibold text-ink hover:bg-gold-bright"
-              onClick={() => {
-                // Fase 2: reciprocità. Per ora il CTA porta al gate voto.
-                window.dispatchEvent(new CustomEvent("vb:request-jury"));
-              }}
+              onClick={() => setStage("gate")}
             >
               Chiedi a cinque persone vere
             </button>
           </div>
+        </div>
+      )}
+
+      {/* STADIO 4: prima rispondi tu */}
+      {stage === "gate" && (
+        <div className="animate-fade">
+          <VoteGate
+            onCreditFull={() => {
+              // Fase 3 apre il giurì da qui.
+              setStage("ai");
+            }}
+          />
         </div>
       )}
     </section>

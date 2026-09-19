@@ -16,3 +16,7 @@ Registro delle scelte non coperte da spec/brand (CLAUDE.md: scegli l'opzione pi�
 | 2026-09-19 | Resize doppio: client (canvas, max 1280px, JPEG q0.85) + server (sharp, se ancora >1280px) | Requisito CLAUDE.md su entrambi i lati; il server protegge da upload non passati dal client |
 | 2026-09-19 | `POST /api/verdict` salva la foto in Storage **solo dopo** il verdetto AI: se `unsafe_content` la foto non tocca il bucket | Requisito esplicito Fase 1: "non salvare la foto" |
 | 2026-09-19 | CTA "Chiedi a cinque persone vere" emette evento `vb:request-jury`; il gate di voto arriva in Fase 2 | La Fase 1 copre solo gli stadi 1→3; il punto di aggancio è già predisposto |
+| 2026-09-19 | Moderazione note a due livelli: euristica locale (`body-reference.ts`) + Anthropic Haiku temp 0, fail-closed | La rete di sicurezza locale filtra match certi senza latenza AI; se l'AI non risponde la nota viene filtrata, mai pubblicata senza moderazione |
+| 2026-09-19 | Contatore "max 20 voti per sessione" in cookie httpOnly server-side | Spec §6.4 chiede tracciamento server-side; localStorage è vietato da CLAUDE.md per stato critico |
+| 2026-09-19 | Richieste Pro identificate in coda da `votes_target > 5` | Il piano Pro imposta `votes_target=10`; evita una join su `users.plan` nella query coda |
+| 2026-09-19 | URL foto giurato firmato a 60 secondi | Scadenza breve: la foto esiste solo per il tempo del voto (minimo necessario) |
