@@ -24,3 +24,7 @@ Registro delle scelte non coperte da spec/brand (CLAUDE.md: scegli l'opzione pi�
 | 2026-09-19 | Card OG image 1080×1350 senza foto, sempre | La condivisione social parte senza foto (privacy di default); la foto sta solo nel permalink `/c/[id]` se `keep_photo` |
 | 2026-09-19 | `/c/[id]` rende la card server-side con la stessa grafica in-app; la PNG OG (next/og) per le preview social è separata | Un solo layout da mantenere in-app; la OG image serve solo ai crawler |
 | 2026-09-19 | Chiusura giurì client: a 5 voti o timer 0, il client legge `jury_summary` con retry (il cron chiude entro 30s) | Supabase free non ha pg_cron affidabile; Vercel Cron su /api/cron/close-juries con secret |
+| 2026-09-19 | "Cancella tutto": hard delete via `auth.admin.deleteUser` (cascade su users/requests/votes) + remove foto dal bucket prima | ON DELETE CASCADE già in migrazione; una sola chiamata amministrativa, zero righe residue |
+| 2026-09-19 | Webhook Stripe idempotente per design degli effetti: boost è `mode=payment` (pagabile una volta), pro è set plan='pro' idempotente | Stripe ritrasmette gli eventi; effetti ripetuti non cambiano lo stato |
+| 2026-09-19 | Email via fetch diretto a api.resend.com invece di SDK | Una sola chiamata POST, niente dipendenza; se non configurata, silenzioso in dev |
+| 2026-09-19 | PostHog caricato dinamicamente solo se `NEXT_PUBLIC_POSTHOG_KEY` presente | Zero peso nel bundle se analytics non attivo |

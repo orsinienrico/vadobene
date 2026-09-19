@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient, createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
 import { anthropic } from "@/lib/anthropic";
 import { AiVerdict as AiVerdictT, JurySummary as JurySummaryT } from "@/lib/contracts";
 import { summarizeJury } from "@/lib/summarize";
+import { sendEmail, juryClosedEmail } from "@/lib/email";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -62,7 +63,23 @@ export async function GET(req: NextRequest) {
       .from("requests")
       .update({ status: "jury_closed", jury_summary: summary })
       .eq("id", request.id);
-    if (!closeErr) closed.push(request.id);
+    if (!closeErr) {
+      closed.push(request.id);
+
+      // Email di chiusura giurì (Fase 4): "Ecco. Sì, 4 su 5." con link alla card.
+      const { data: owner } = await supabase
+        .from("users")
+        .select("email")
+        .eq("id", request.user_id)
+        .single();
+      if (owner?.email) {
+        const { subject, html } = juryClosedEmail({
+          headline: summary.headline,
+          cardUrl: `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://vadobene.app"}/c/${request.id}`,
+        });
+        await sendEmail(owner.email, subject, html);
+      }
+    }
   }
 
   return NextResponse.json({ closed: closed.length, ids: closed });
