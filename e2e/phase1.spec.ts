@@ -67,7 +67,9 @@ test.describe("flusso chiedi", () => {
     // nei test condizionali sotto.
   });
 
-  test(hasEnv ? "flusso completo fino al primo parere" : "flusso completo (skip senza env)", async ({ page }) => {
+  // Tag @real: il full-flow tocca Supabase + Anthropic reali — la CI lo separa
+  // (smoke su master con secrets); le altre suite sono mock e girano su ogni PR.
+  test(hasEnv ? "flusso completo fino al primo parere @real" : "flusso completo (skip senza env) @real", async ({ page }) => {
     test.skip(!hasEnv, "richiede Supabase + Anthropic configurati");
     await page.goto("/");
     const drop = page.getByRole("button", { name: "Aggiungi il tuo outfit" });

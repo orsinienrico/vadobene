@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Brand } from "@/components/Brand";
 import { Hero } from "@/components/Hero";
 import { Flow } from "@/components/Flow";
@@ -38,9 +39,9 @@ export default function Home() {
         <Brand size={18} />
         <p className="mt-2">
           Lo specchio che non mente. © Orsini&amp;Co. ·{" "}
-          <a href="/privacy" className="underline decoration-muted/40 hover:decoration-muted">
+          <Link href="/privacy" className="underline decoration-muted/40 hover:decoration-muted">
             Privacy
-          </a>
+          </Link>
         </p>
       </footer>
     </>

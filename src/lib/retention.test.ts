@@ -1,16 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { computeCutoff } from "./retention";
 
 /**
  * Test accettazione Fase 4: "foto sparite dallo Storage dopo 24h
  * (test con clock mockato)".
  *
- * La logica di selezione (created_at < now()-24h AND keep_photo=false)
- * è estratta in computeExpiryQueryParams per essere testata con clock mockato.
+ * Il cutoff è importato dalla fonte reale (src/lib/retention.ts, usata dal
+ * cron /api/cron/expire-photos): la logica di selezione è
+ * created_at < now()-24h AND keep_photo=false.
  */
-
-export function computeCutoff(nowMs: number, hours = 24): string {
-  return new Date(nowMs - hours * 60 * 60 * 1000).toISOString();
-}
 
 describe("retention foto 24h", () => {
   beforeEach(() => {

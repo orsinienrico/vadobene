@@ -1,5 +1,5 @@
 import { ImageResponse } from "next/og";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
 import type { JurySummary } from "@/lib/contracts";
 
 export const runtime = "nodejs";
@@ -21,6 +21,9 @@ const COLORS = {
  * Card condivisibile 1080×1350 (Fase 3) — convenzione next/og per le
  * metadata routes: default export. Stesso layout della card in-app.
  * La foto non è mai inclusa nella OG image (privacy di default).
+ * Service role come la pagina /c/[id]: RLS blocca i non owner/giurati e
+ * l'anteprima deve girare per chiunque riceva il link. Select limitata ai
+ * soli campi pubblici.
  */
 export default async function OgImage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -28,7 +31,7 @@ export default async function OgImage({ params }: { params: Promise<{ id: string
     throw new Error("not found");
   }
 
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { data: request } = await supabase
     .from("requests")
     .select("jury_summary, occasion_id, custom_occasion")

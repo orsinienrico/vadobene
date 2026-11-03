@@ -49,3 +49,22 @@ export const VoteRequest = z.object({
   note: z.string().max(280).optional(),
 });
 export type VoteRequest = z.infer<typeof VoteRequest>;
+
+export const JuryOpenRequest = z.object({
+  // true → senza credito sufficiente apre il giurì senza spendere: i voti
+  // mancanti saranno fill AI alla chiusura, dichiarati (is_ai=true, spec §3).
+  allowAi: z.boolean().optional(),
+});
+export type JuryOpenRequest = z.infer<typeof JuryOpenRequest>;
+
+/**
+ * Voto AI di fill (output del giudice nel cron close-juries). Il prompt chiede
+ * {"verdict":"yes|tweak|no","note":"max 60 caratteri"}: verdict fuori enum o
+ * JSON non conforme → voto scartato. La nota è troncata a 60 caratteri e
+ * moderata fail-closed (moderateNote) prima dell'insert.
+ */
+export const AiFillVote = z.object({
+  verdict: z.enum(["yes", "tweak", "no"]),
+  note: z.string().max(280).nullable().optional(),
+});
+export type AiFillVote = z.infer<typeof AiFillVote>;

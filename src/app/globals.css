@@ -12,21 +12,17 @@
   --color-warn: #f0c674;
   --color-bad: #f19a88;
   --color-line: rgba(242, 233, 216, 0.2);
-
-  --font-display: var(--font-display), serif;
-  --font-logo: var(--font-logo), sans-serif;
-  --font-body: var(--font-body), sans-serif;
-  --font-mono: var(--font-mono), monospace;
 }
 
-:root {
-  --line: rgba(242, 233, 216, 0.2);
-  --gold: #f2e9d8;
-  --gold-bright: #ffffff;
-  --muted: #8fa6ae;
-  --ok: #8fd3b3;
-  --warn: #f0c674;
-  --bad: #f19a88;
+/* Font (BRAND.md §5): pattern Tailwind 4 + next/font. `inline` risolve i valori a
+   build time nei utilities (niente emissione :root che collide con le variabili
+   di next/font su <html>). --font-body è Inter dal layout.tsx: il preflight
+   applica --font-sans (che la referenzia) al body. */
+@theme inline {
+  --font-sans: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-display), serif;
+  --font-logo: var(--font-logo), sans-serif;
+  --font-mono: var(--font-mono), monospace;
 }
 
 /* iOS Safari: colore fisso dietro tutto, mai trasparenze sul body */
@@ -77,6 +73,6 @@
 }
 
 :focus-visible {
-  outline: 2px solid var(--gold-bright);
+  outline: 2px solid var(--color-gold-bright);
   outline-offset: 3px;
 }

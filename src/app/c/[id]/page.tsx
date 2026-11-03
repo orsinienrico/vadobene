@@ -1,14 +1,51 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
 import { Brand } from "@/components/Brand";
 import type { JurySummary } from "@/lib/contracts";
 
 export const dynamic = "force-dynamic";
 
 /**
+ * Titolo e descrizione dalla summary (headline + riga pubblica della card).
+ * Solo dati già visibili nella card condivisibile: niente foto, niente nome.
+ * ogg/twitter sono coperti da opengraph-image.tsx.
+ */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return { title: "vado bene?" };
+
+  const supabase = createAdminClient();
+  const { data } = await supabase
+    .from("requests")
+    .select("jury_summary")
+    .eq("id", id)
+    .eq("status", "jury_closed")
+    .single();
+  const summary = data?.jury_summary as JurySummary | null;
+  if (!summary) return { title: "vado bene?" };
+
+  const description = summary.quote
+    ? summary.quote
+    : summary.top_tweak
+      ? `Modifica più votata: ${summary.top_tweak}`
+      : "Cinque persone vere, alla cieca.";
+  return { title: `vado bene? — ${summary.headline}`, description };
+}
+
+/**
  * Permalink pubblico della card — Fase 3.
  * Mostra solo la card. MAI la foto se keep_photo = false.
+ *
+ * Lettura con service role: RLS blocca i visitatori non owner/giurati e la
+ * card deve essere raggiungibile da chi riceve il link (WhatsApp, ecc.).
+ * La select copre SOLO i campi pubblici della card — mai votes, note o
+ * dati dell'utente.
  */
 export default async function CardPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -16,7 +53,7 @@ export default async function CardPage({ params }: { params: Promise<{ id: strin
   // UUID valido altrimenti notFound.
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
 
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { data: request } = await supabase
     .from("requests")
     .select("jury_summary, keep_photo, photo_path, occasion_id, custom_occasion")

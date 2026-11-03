@@ -45,7 +45,7 @@ export function Hero() {
               Vado bene? — provalo
             </a>
             <p className="text-[13px] text-muted">
-              Gratis, senza registrazione.
+              Gratis. Il primo parere, senza registrazione.
               <br />
               <b className="font-medium text-gold">Si giudica l&apos;outfit, mai la persona.</b>
             </p>

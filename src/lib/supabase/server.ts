@@ -28,7 +28,11 @@ export async function createClient() {
   );
 }
 
-/** Client con service role, solo per Route Handler fidati (cron, webhook). Bypassa RLS. */
+/**
+ * Client con service role, solo per percorsi server fidati: cron, webhook e
+ * lettura pubblica della card in /c/[id] (select limitata ai soli campi
+ * pubblici della card). Bypassa RLS.
+ */
 export function createAdminClient() {
   return createSupabaseClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

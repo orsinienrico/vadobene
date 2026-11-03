@@ -20,8 +20,8 @@ export default function PrivacyPage() {
           nome, non il tuo profilo, non i tuoi follower. Tu non vedi chi ha risposto.
         </p>
         <p>
-          La foto viene cancellata dopo 24 ore, a meno che tu non scelga di tenerla. La decidi tu,
-          per ogni richiesta.
+          La foto serve solo per dare il parere: la vedono i cinque che rispondono, poi nessuno.
+          Per adesso non c&apos;è modo di tenerla: ogni foto viene cancellata entro 24 ore, sempre.
         </p>
         <p>
           Qui si giudica l&apos;outfit, mai la persona. Le righe che parlano del tuo corpo non

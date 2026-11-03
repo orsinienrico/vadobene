@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { moderateNote } from "@/lib/moderation";
 import { VoteRequest } from "@/lib/contracts";
 
@@ -8,7 +8,7 @@ export const maxDuration = 30;
 
 /**
  * POST /api/vote — { requestId, verdict, note? } → moderazione, salva il voto,
- * incrementa jury_credit e juror_score, restituisce { credit }.
+ * incrementa jury_credit e juror_score via RPC atomiche, restituisce { credit }.
  */
 export async function POST(req: NextRequest) {
   let body: unknown;
@@ -31,6 +31,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Serve un account per votare." }, { status: 401 });
   }
 
+  // Utente OTP-only senza riga users: upsert via service role (ON CONFLICT DO
+  // NOTHING) prima dell'insert — votes.juror_id ha FK su users, senza riga il
+  // voto fallirebbe e il credito andrebbe perso. Self-vote resta bloccato
+  // applicativamente e ora anche dal trigger DB votes_no_self_vote.
+  const admin = createAdminClient();
+  await admin.from("users").upsert({ id: userId }, { onConflict: "id", ignoreDuplicates: true });
+
   // La request deve essere in jury_open e non propria.
   const { data: request, error: rErr } = await supabase
     .from("requests")
@@ -47,8 +54,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Non puoi votare la tua richiesta." }, { status: 403 });
   }
 
-  // Moderazione della nota (se presente).
-  let noteStatus: "ok" | "filtered" | "flagged" = "ok";
+  // Moderazione della nota (se presente). Il contratto reale di moderateNote
+  // è ok | filtered (fail-closed): nessun branch "flagged" irraggiungibile.
+  let noteStatus: "ok" | "filtered" = "ok";
   if (note && note.trim().length > 0) {
     try {
       const mod = await moderateNote(note);
@@ -75,16 +83,23 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Voto non registrato. Riprova." }, { status: 500 });
   }
 
-  // Credito e punteggio: jury_credit += 1, juror_score += 1 (§6.4).
-  const { data: user } = await supabase
+  // Credito e punteggio via RPC atomiche (§6.4: jury_credit += 1, juror_score += 1).
+  // Sostituisce il read-then-write precedente (race: credito perso o doppio).
+  const { error: awardErr } = await admin.rpc("award_jury_credit", {
+    p_user_id: userId,
+    p_amount: 1,
+  });
+  const { error: scoreErr } = await admin.rpc("bump_juror_score", { p_user_id: userId });
+
+  // Il voto è già registrato: un errore dell'award non deve far fallire la risposta.
+  const { data: freshUser } = await admin
     .from("users")
-    .select("jury_credit, juror_score")
+    .select("jury_credit")
     .eq("id", userId)
     .single();
+  if (awardErr || scoreErr || !freshUser) {
+    console.error("[vote] reward non accreditato", { userId, requestId, awardErr, scoreErr });
+  }
 
-  const credit = (user?.jury_credit ?? 0) + 1;
-  const score = (user?.juror_score ?? 0) + 1;
-  await supabase.from("users").update({ jury_credit: credit, juror_score: score }).eq("id", userId);
-
-  return NextResponse.json({ credit, noteStatus });
+  return NextResponse.json({ credit: freshUser?.jury_credit ?? 0, noteStatus });
 }

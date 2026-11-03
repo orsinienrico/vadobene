@@ -19,6 +19,8 @@ export default function MePage() {
   const [confirming, setConfirming] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [portalBusy, setPortalBusy] = useState(false);
+  const [portalMessage, setPortalMessage] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -56,6 +58,25 @@ export default function MePage() {
     }
   };
 
+  const openPortal = async () => {
+    if (portalBusy) return;
+    setPortalBusy(true);
+    setPortalMessage(null);
+    try {
+      const res = await fetch("/api/stripe/portal", { method: "POST" });
+      const d = (await res.json().catch(() => ({}))) as { url?: string; error?: string };
+      if (res.ok && d.url) {
+        window.location.href = d.url;
+        return;
+      }
+      setPortalMessage(d.error ?? "Portale non disponibile. Riprova.");
+    } catch {
+      setPortalMessage("Portale non disponibile. Riprova.");
+    } finally {
+      setPortalBusy(false);
+    }
+  };
+
   return (
     <main className="mx-auto max-w-[430px] px-6 py-16">
       <Brand size={21} />
@@ -77,7 +98,8 @@ export default function MePage() {
               </div>
               <div className="flex justify-between">
                 <dt className="text-muted">Credito giurì</dt>
-                <dd className="font-semibold">{profile.jury_credit} / 5</dd>
+                {/* Credito reale, senza cap: con Boost o pro si può superare 5. */}
+                <dd className="font-semibold">{profile.jury_credit}</dd>
               </div>
               <div className="flex justify-between">
                 <dt className="text-muted">Voti dati</dt>
@@ -90,6 +112,17 @@ export default function MePage() {
                 </div>
               )}
             </dl>
+            <button
+              type="button"
+              disabled={portalBusy}
+              onClick={openPortal}
+              className="mt-6 w-full rounded-xl border border-line px-5 py-3 text-sm font-semibold text-gold transition-colors hover:border-gold disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {portalBusy ? "Apro il portale…" : "Gestisci abbonamento"}
+            </button>
+            {portalMessage && (
+              <p role="alert" className="mt-3 text-sm text-bad">{portalMessage}</p>
+            )}
           </div>
 
           <div className="mt-8 rounded-2xl border border-bad/40 bg-panel px-6 py-6">

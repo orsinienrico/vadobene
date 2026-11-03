@@ -1,13 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
+import { computeCutoff } from "@/lib/retention";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
-
-/** Cutoff retention: now - 24h, come ISO string (testato con clock mockato). */
-function computeCutoff(nowMs: number, hours = 24): string {
-  return new Date(nowMs - hours * 60 * 60 * 1000).toISOString();
-}
 
 /**
  * Cron ogni ora — Fase 4. Protetta da CRON_SECRET.
