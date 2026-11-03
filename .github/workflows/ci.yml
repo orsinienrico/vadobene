@@ -7,13 +7,13 @@ on:
 
 jobs:
   ci:
+    # lint + typecheck + unit test + build. L'e2e sta nei due job dedicati sotto.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
+      # La versione pnpm arriva dal campo packageManager di package.json.
       - uses: pnpm/action-setup@v4
-        with:
-          version: 9
 
       - uses: actions/setup-node@v4
         with:
@@ -34,19 +34,103 @@ jobs:
       - name: Build
         run: pnpm build
 
-      # e2e: richiede Supabase + Anthropic reali come secrets; esegue solo
-      # i test UI quando le env non ci sono (i test dipendenti fanno skip).
-      - name: Install Playwright browsers
-        run: npx playwright install chromium --with-deps
+  # e2e in due tagli dello stesso suite: il full-flow è taggato @real e gira
+  # solo nello smoke su master con secrets; tutto il resto (mock) su ogni PR.
+  e2e-mock:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
 
-      - name: E2E
-        run: pnpm e2e
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: E2E (mock — senza secrets, su ogni PR)
+        # pnpm e2e -- --grep passava il "--" letterale a playwright e il filtro
+        # veniva ignorato (e2e no-op): lo script e2e:mock porta il flag reale.
+        run: pnpm e2e:mock
         env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          # PLAYWRIGHT_CHANNEL vuoto: il channel `chrome` (Chrome di sistema)
+          # resta per la macchina locale; nel CI si usa il chromium scaricato.
+          PLAYWRIGHT_CHANNEL: ""
 
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: e2e-screens
+          name: e2e-mock-screens
           path: e2e/screens/
+
+  e2e-smoke:
+    # Solo su push master: il full-flow tocca Supabase + Anthropic reali.
+    # ATTENZIONE: le credenziali qui sotto DEVONO essere di un PROGETTO TEST
+    # (Supabase + Anthropic) — il test @real scrive request e foto nel DB: mai
+    # le credenziali di produzione, inquinerebbero la coda reale.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: E2E (smoke @real — solo su master, con secrets)
+        # Script e2e:smoke (il "--" letterale di `pnpm e2e -- --grep` veniva
+        # ignorato da playwright): filtra SOLO i test @real.
+        run: pnpm e2e:smoke
+        env:
+          PLAYWRIGHT_CHANNEL: ""
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-smoke-screens
+          path: e2e/screens/
+
+  # Verifica di compilazione dell'immagine Docker su ogni PR (niente push).
+  docker-build:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build image (no push)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          # Placeholder per le NEXT_PUBLIC_* inlineate nel bundle: la build
+          # compila anche senza valori reali (il client di una build di prova
+          # non deve funzionare).
+          build-args: |
+            NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co
+            NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder-anon-key
+            NEXT_PUBLIC_POSTHOG_KEY=
+            NEXT_PUBLIC_POSTHOG_HOST=https://eu.i.posthog.com
+            NEXT_PUBLIC_SITE_URL=http://localhost:3000
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

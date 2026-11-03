@@ -1,9 +1,23 @@
-allowBuilds:
-  core-js: set this to true or false
-  esbuild: set this to true or false
-  sharp: set this to true or false
-  unrs-resolver: set this to true or false
+# Progetto a pacchetto unico: `packages` serve a pnpm (>=10) per accettare il
+# workspace manifest (usato qui solo per le impostazioni sotto).
+packages:
+  - "."
+
+# Package che possono eseguire script di build/postinstall (pnpm 10+).
+# sharp compila binari nativi; esbuild/unrs-resolver scaricano binari.
 onlyBuiltDependencies:
   - sharp
   - unrs-resolver
   - esbuild
+
+# Scarica solo i binari nativi per questa piattaforma e per la piattaforma corrente
+# (es. @next/swc-*, @img/sharp-*) invece di tutte le combinazioni OS/CPU supportate.
+# Risparmia ~1.5GB in node_modules localmente, ma `current` assicura che il Docker
+# build (Linux) trovi i binari corretti.
+supportedArchitectures:
+  os:
+    - win32
+    - current
+  cpu:
+    - x64
+    - current

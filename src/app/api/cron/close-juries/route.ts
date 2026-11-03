@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
-import { anthropic } from "@/lib/anthropic";
-import { AiVerdict as AiVerdictT, JurySummary as JurySummaryT } from "@/lib/contracts";
+import { JurySummary as JurySummaryT } from "@/lib/contracts";
 import { summarizeJury } from "@/lib/summarize";
+import { fillWithAiVotes } from "@/lib/ai-fill";
 import { sendEmail, juryClosedEmail } from "@/lib/email";
 
 export const runtime = "nodejs";
@@ -10,8 +10,12 @@ export const maxDuration = 120;
 
 /**
  * Cron ogni 30s — Fase 3. Protetta da CRON_SECRET (header o query param).
- * Chiude le jury_open con 5 voti o deadline scaduta; riempi i voti mancanti
- * con AI (is_ai=true); calcola JurySummary e salva in jury_summary.
+ * Chiude le jury_open con votes_target voti umani (chiusura anticipata, §6.3)
+ * o deadline scaduta; riempi i voti mancanti con AI (is_ai=true, note moderate
+ * fail-closed); calcola JurySummary e salva in jury_summary.
+ * Idempotente: claim_jury_close (RPC atomica) — il secondo chiamante concorrente
+ * riceve false e salta fill, summary ed email (P0-3). Se fill/summary/update/email
+ * throw, la request torna jury_open (revert) e il prossimo giro riprova (P1).
  */
 export async function GET(req: NextRequest) {
   const secret = process.env.CRON_SECRET;
@@ -27,46 +31,88 @@ export async function GET(req: NextRequest) {
   const supabase = createAdminClient();
   const now = new Date().toISOString();
 
-  // Jury scadute o complete ma non ancora chiuse.
-  const { data: open, error } = await supabase
+  // Tutte le jury_open: la selezione finale è deadline scaduta OPPURE già
+  // votes_target voti umani (la summary esiste appena arriva il 5° voto).
+  const { data: allOpen, error } = await supabase
     .from("requests")
     .select("id, occasion_id, custom_occasion, jury_deadline_at, votes_target, user_id")
-    .eq("status", "jury_open")
-    .or(`jury_deadline_at.lte.${now}`);
+    .eq("status", "jury_open");
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  if (!open || open.length === 0) {
+  if (error) return NextResponse.json({ error: "Cron non riuscito. Riprova." }, { status: 500 });
+  if (!allOpen || allOpen.length === 0) {
+    return NextResponse.json({ closed: 0 });
+  }
+
+  // Conteggio voti umani (group by request_id in node): is_ai = false.
+  const { data: humanVoteRows, error: hvErr } = await supabase
+    .from("votes")
+    .select("request_id, is_ai")
+    .eq("is_ai", false)
+    .in(
+      "request_id",
+      allOpen.map((r) => r.id)
+    );
+  if (hvErr) return NextResponse.json({ error: "Cron non riuscito. Riprova." }, { status: 500 });
+
+  const humanCounts = new Map<string, number>();
+  for (const v of humanVoteRows ?? []) {
+    humanCounts.set(v.request_id, (humanCounts.get(v.request_id) ?? 0) + 1);
+  }
+
+  const due = allOpen.filter((r) => {
+    const expired = r.jury_deadline_at != null && r.jury_deadline_at <= now;
+    const target = r.votes_target ?? 5;
+    return expired || (humanCounts.get(r.id) ?? 0) >= target;
+  });
+  if (due.length === 0) {
     return NextResponse.json({ closed: 0 });
   }
 
   const closed: string[] = [];
 
-  for (const request of open) {
-    const { data: votes } = await supabase
-      .from("votes")
-      .select("verdict, note, note_status, is_ai")
-      .eq("request_id", request.id);
+  for (const request of due) {
+    // Idempotenza: claim atomico jury_open → jury_closed. Il secondo chiamante
+    // concorrente riceve false e NON esegue fill AI, summary né email.
+    const { data: claimed, error: claimErr } = await supabase.rpc("claim_jury_close", {
+      p_request_id: request.id,
+    });
+    if (claimErr || !claimed) continue;
 
-    const target = request.votes_target ?? 5;
-    const current = votes ?? [];
+    // Fill AI + summary + update + email in try/catch: se un passo throw
+    // (Anthropic giù, Zod parse, update, email), la request torna jury_open e
+    // il prossimo giro del cron riprova — mai una giurì chiusa senza summary
+    // né email (P1: il claim da solo rendeva l'errore permanente).
+    try {
+      const { data: votes } = await supabase
+        .from("votes")
+        .select("verdict, note, note_status, is_ai")
+        .eq("request_id", request.id);
 
-    if (current.length < target) {
-      // Riempi i voti mancanti con Anthropic (is_ai=true).
-      const missing = target - current.length;
-      const aiVotes = await fillWithAiVotes(supabase, request, missing);
-      current.push(...aiVotes.map((v) => ({ ...v, note_status: "ok" as const })));
-    }
+      const target = request.votes_target ?? 5;
+      const current = votes ?? [];
 
-    const summary = JurySummaryT.parse(summarizeJury(current));
+      if (current.length < target) {
+        // Riempi i voti mancanti con Anthropic (is_ai=true).
+        const missing = target - current.length;
+        const aiVotes = await fillWithAiVotes(supabase, request, missing);
+        current.push(...aiVotes);
+      }
 
-    const { error: closeErr } = await supabase
-      .from("requests")
-      .update({ status: "jury_closed", jury_summary: summary })
-      .eq("id", request.id);
-    if (!closeErr) {
+      const summary = JurySummaryT.parse(summarizeJury(current));
+
+      // Update finale della summary condizionato: solo se la request è ancora
+      // jury_closed come da claim — mai un update alla cieca.
+      const { error: closeErr } = await supabase
+        .from("requests")
+        .update({ jury_summary: summary })
+        .eq("id", request.id)
+        .eq("status", "jury_closed");
+      if (closeErr) throw new Error(`summary update non riuscito: ${closeErr.message}`);
+
       closed.push(request.id);
 
-      // Email di chiusura giurì (Fase 4): "Ecco. Sì, 4 su 5." con link alla card.
+      // Email di chiusura giurì (Fase 4), SOLO dopo l'update summary riuscito:
+      // "Ecco. Sì, 4 su 5." con link alla card.
       const { data: owner } = await supabase
         .from("users")
         .select("email")
@@ -79,102 +125,29 @@ export async function GET(req: NextRequest) {
         });
         await sendEmail(owner.email, subject, html);
       }
+    } catch (err) {
+      // Revert: la request torna jury_open (il claim è ancora nostro), il
+      // prossimo giro del cron riprova fill/summary/email da capo. Idempotente:
+      // i voti AI già inseriti contano come voti esistenti, nessun doppione.
+      console.error("[close-juries] chiusura fallita, revert a jury_open", {
+        requestId: request.id,
+        err,
+      });
+      const { error: revertErr } = await supabase
+        .from("requests")
+        .update({ status: "jury_open" })
+        .eq("id", request.id)
+        .eq("status", "jury_closed");
+      if (revertErr) {
+        // Revert fallito: log critico. La request rimane jury_closed senza summary.
+        // Questo è un fallimento permanente se non risolto manualmente.
+        console.error("[close-juries] CRITICO: revert fallito, request orfana", {
+          requestId: request.id,
+          revertErr,
+        });
+      }
     }
   }
 
   return NextResponse.json({ closed: closed.length, ids: closed });
-}
-
-/** Genera i voti AI mancanti con lo stesso prompt del verdetto (singolo voto). */
-async function fillWithAiVotes(
-  supabase: ReturnType<typeof createAdminClient>,
-  request: { id: string; occasion_id: number | null; custom_occasion: string | null },
-  missing: number
-): Promise<{ verdict: "yes" | "tweak" | "no"; note: string | null; is_ai: boolean }[]> {
-  let occasionLabel = request.custom_occasion ?? "";
-  if (request.occasion_id) {
-    const { data: occ } = await supabase
-      .from("occasions")
-      .select("label_it")
-      .eq("id", request.occasion_id)
-      .single();
-    occasionLabel = occ?.label_it ?? occasionLabel;
-  }
-
-  // Foto della request per il giudice AI.
-  const { data: req } = await supabase
-    .from("requests")
-    .select("photo_path")
-    .eq("id", request.id)
-    .single();
-
-  const generated: { verdict: "yes" | "tweak" | "no"; note: string | null; is_ai: boolean }[] = [];
-
-  for (let i = 0; i < missing; i++) {
-    try {
-      let imageBase64: string | null = null;
-      if (req?.photo_path) {
-        const { data: file } = await supabase.storage.from("outfits").download(req.photo_path);
-        if (file) {
-          const buf = Buffer.from(await file.arrayBuffer());
-          imageBase64 = buf.toString("base64");
-        }
-      }
-
-      const response = await anthropic().messages.create({
-        model: "claude-sonnet-4-5",
-        max_tokens: 200,
-        system:
-          "Sei un parere onesto sull'adeguatezza di un outfit per un'occasione. Giudichi coerenza tra outfit e occasione, mai il corpo. Un solo verdetto: yes / tweak / no. Se tweak, aggiungi una sola modifica concreta, eseguibile in un minuto. Poi una riga breve come nota del giurato, diretta, mai crudele, mai entusiasta.",
-        messages: [
-          {
-            role: "user",
-            content: [
-              ...(imageBase64
-                ? [
-                    {
-                      type: "image" as const,
-                      source: { type: "base64" as const, media_type: "image/jpeg" as const, data: imageBase64 },
-                    },
-                  ]
-                : []),
-              {
-                type: "text" as const,
-                text: `Occasione: ${occasionLabel}. Rispondi in JSON: {"verdict":"yes|tweak|no","note":"max 60 caratteri"}`,
-              },
-            ],
-          },
-        ],
-      });
-
-      const text = response.content.find((b) => b.type === "text");
-      if (text && text.type === "text") {
-        const match = text.text.match(/\{[\s\S]*\}/);
-        if (match) {
-          const parsed = JSON.parse(match[0]) as { verdict: string; note?: string };
-          if (["yes", "tweak", "no"].includes(parsed.verdict)) {
-            const vote = {
-              verdict: parsed.verdict as "yes" | "tweak" | "no",
-              note: parsed.note?.slice(0, 60) ?? null,
-              is_ai: true,
-            };
-            await supabase.from("votes").insert({
-              request_id: request.id,
-              juror_id: null,
-              verdict: vote.verdict,
-              note: vote.note,
-              is_ai: true,
-              note_status: "ok",
-            });
-            generated.push(vote);
-            continue;
-          }
-        }
-      }
-    } catch {
-      // AI non disponibile: procedi senza questo voto.
-    }
-  }
-
-  return generated;
 }

@@ -75,9 +75,20 @@ create policy "requests delete own" on requests
 
 -- Il giurato deve leggere la richiesta che sta per votare (foto firmata,
 -- occasione). Il proprietario vede le proprie. Scrittura solo via service role.
-create policy "requests select jurors" on requests
+-- 1. Lettura di richieste in cui ha già votato (visione recap voto).
+create policy "requests select jurors voted" on requests
   for select using (
     exists (
+      select 1 from votes v
+      where v.request_id = requests.id and v.juror_id = auth.uid()
+    )
+  );
+-- 2. Lettura di richieste aperte (jury_open) senza averle ancora votate
+--    (needed for /api/queue/next a mostrare le richieste disponibili).
+create policy "requests select open jury" on requests
+  for select using (
+    status = 'jury_open' and
+    not exists (
       select 1 from votes v
       where v.request_id = requests.id and v.juror_id = auth.uid()
     )

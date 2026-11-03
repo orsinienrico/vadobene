@@ -1,7 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { Brand } from "./Brand";
 import type { JurySummary } from "@/lib/contracts";
+import { track } from "@/lib/analytics";
+
+// Come il prototipo: il flash del feedback dura 1,8s.
+const COPIED_FLASH_MS = 1800;
 
 /**
  * Stadio 6 — card finale (prototipo #stage-final .verdict-card).
@@ -10,20 +15,35 @@ import type { JurySummary } from "@/lib/contracts";
 export function VerdictCard({
   summary,
   occasion,
+  requestId,
   onNewLook,
 }: {
   summary: JurySummary;
   occasion: string;
+  requestId: string;
   onNewLook: () => void;
 }) {
+  const [copied, setCopied] = useState(false);
+
   const share = async () => {
-    const text = `vado bene? — ${occasion}. ${summary.headline} — vadobene.app`;
+    const baseUrl = window.location.origin;
+    const permalink = requestId ? `${baseUrl}/c/${requestId}` : baseUrl;
+    const text = `vado bene? — ${occasion}. ${summary.headline} — ${permalink}`;
     try {
       if (navigator.share) {
-        await navigator.share({ title: "vado bene?", text });
+        // Se requestId manca, omettiamo l'URL dalla share (permalink fallback alla home).
+        await navigator.share({
+          title: "vado bene?",
+          text,
+          ...(requestId && { url: permalink }),
+        });
+        void track("card_shared", { method: "native" });
         return;
       }
       await navigator.clipboard.writeText(text);
+      void track("card_shared", { method: "clipboard" });
+      setCopied(true);
+      setTimeout(() => setCopied(false), COPIED_FLASH_MS);
     } catch {
       // Annullato dall'utente o clipboard negata: silenzioso.
     }
@@ -88,7 +108,7 @@ export function VerdictCard({
           onClick={share}
           className="min-w-[130px] flex-1 rounded-xl bg-gold px-4 py-[15px] text-sm font-semibold text-ink hover:bg-gold-bright"
         >
-          Condividi
+          {copied ? "Copiato" : "Condividi"}
         </button>
         <button
           type="button"
