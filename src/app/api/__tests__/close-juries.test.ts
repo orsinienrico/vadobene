@@ -145,8 +145,10 @@ function makeCronAdmin(opts: {
   return { updatePatches, inserted, rpc };
 }
 
-function get(url = "http://localhost:3000/api/cron/close-juries") {
-  return GET(new NextRequest(url));
+function get(url = "http://localhost:3000/api/cron/close-juries", authorized = true) {
+  const secret = process.env.CRON_SECRET;
+  const headers = authorized && secret ? { authorization: "Bearer " + secret } : {};
+  return GET(new NextRequest(url, { headers }));
 }
 
 describe("GET /api/cron/close-juries", () => {
@@ -156,7 +158,7 @@ describe("GET /api/cron/close-juries", () => {
     vi.mocked(moderateNote).mockReset();
     vi.mocked(sendEmail).mockReset();
     anthropicCreate.mockReset();
-    delete process.env.CRON_SECRET;
+    process.env.CRON_SECRET = "test-cron-secret";
   });
 
   afterEach(() => {
@@ -337,10 +339,19 @@ describe("GET /api/cron/close-juries", () => {
     makeCronAdmin({ open: [openRequest()] });
     process.env.CRON_SECRET = "s3cr3t-test";
 
-    const res = await get("http://localhost:3000/api/cron/close-juries");
+    const res = await get("http://localhost:3000/api/cron/close-juries", false);
 
     expect(res.status).toBe(401);
     await expect(res.json()).resolves.toEqual({ error: "Unauthorized" });
+  });
+
+  it("CRON_SECRET mancante → 503, non accede al DB", async () => {
+    const { rpc } = makeCronAdmin({ open: [openRequest()] });
+    delete process.env.CRON_SECRET;
+    const res = await get();
+    expect(res.status).toBe(503);
+    await expect(res.json()).resolves.toEqual({ error: "Cron non configurato." });
+    expect(rpc).not.toHaveBeenCalled();
   });
 
   it("coda vuota → { closed: 0 } senza toccare niente", async () => {
