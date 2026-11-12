@@ -8,11 +8,12 @@ import { createAdminClient } from "@/lib/supabase/server";
 
 /**
  * Webhook Stripe (Fase 4) con eventi firmati su whsec di test e Supabase
- * mockato: boost +5, doppia consegna → skip (ledger processed_events), firma
+ * mockato: boost +5 atomico, doppia consegna → skip via RPC, firma
  * invalida → 400, subscription.deleted → plan free.
  */
 
 vi.mock("@/lib/supabase/server", () => ({ createAdminClient: vi.fn() }));
+vi.mock("@/lib/analytics", () => ({ trackServer: vi.fn().mockResolvedValue(undefined) }));
 
 const SECRET = "whsec_test_123";
 
@@ -62,24 +63,14 @@ function subscriptionDeletedEvent(id = "evt_sub_del_1"): Stripe.Event {
   } as unknown as Stripe.Event;
 }
 
-type InsertResult = { error: { code: string } | null };
-type RpcResult = { data: unknown; error: { message: string } | null };
-
-function makeAdmin(opts?: { insertError?: { code: string }; rpcError?: boolean; updateError?: boolean }) {
-  const insert = vi.fn(async () => ({ error: opts?.insertError ?? null }) as InsertResult);
-  const rpc = vi.fn(async () =>
-    ({ data: undefined, error: opts?.rpcError ? { message: "RPC giù" } : null }) as RpcResult
-  );
-  const delEq = vi.fn(async () => ({ data: null, error: null }));
-  const del = vi.fn(() => ({ eq: delEq }));
-  const updateEq = vi.fn(async () => ({
-    data: null,
-    error: opts?.updateError ? { message: "update giù" } : null,
+function makeAdmin(opts?: { duplicate?: boolean; rpcError?: boolean }) {
+  const rpc = vi.fn(async () => ({
+    data: opts?.duplicate ? false : true,
+    error: opts?.rpcError ? { message: "Transazione DB fallita" } : null,
   }));
-  const update = vi.fn(() => ({ eq: updateEq }));
-  const admin = { from: vi.fn(() => ({ insert, update, delete: del })), rpc };
+  const admin = { rpc };
   vi.mocked(createAdminClient).mockReturnValue(admin as unknown as ReturnType<typeof createAdminClient>);
-  return { admin, insert, rpc, update, updateEq, del, delEq };
+  return { admin, rpc };
 }
 
 function postEvent(event: Stripe.Event, signature: string) {
@@ -104,120 +95,110 @@ describe("POST /api/stripe/webhook", () => {
     delete process.env.STRIPE_SECRET_KEY;
   });
 
-  it("checkout.session.completed con product=boost → award_jury_credit +5", async () => {
-    const { insert, rpc } = makeAdmin();
+  it("boost: process_stripe_event applica +5 in modo atomico", async () => {
+    const { rpc } = makeAdmin();
     const event = boostEvent();
-
     const res = await postEvent(event, signPayload(JSON.stringify(event)));
-
     expect(res.status).toBe(200);
     await expect(res.json()).resolves.toEqual({ received: true });
-    expect(insert).toHaveBeenCalledWith({ id: "evt_boost_1" });
-    expect(rpc).toHaveBeenCalledWith("award_jury_credit", { p_user_id: "user-1", p_amount: 5 });
+    expect(rpc).toHaveBeenCalledExactlyOnceWith("process_stripe_event", {
+      p_event_id: "evt_boost_1",
+      p_user_id: "user-1",
+      p_action: "boost",
+    });
   });
 
-  it("doppia consegna dello stesso event.id → skip (200, nessun +5)", async () => {
-    const { insert, rpc } = makeAdmin({ insertError: { code: "23505" } });
+  it("duplicato Stripe: la RPC restituisce false e non riaccredita", async () => {
+    const { rpc } = makeAdmin({ duplicate: true });
     const event = boostEvent("evt_dup_1");
-
     const res = await postEvent(event, signPayload(JSON.stringify(event)));
-
     expect(res.status).toBe(200);
     await expect(res.json()).resolves.toEqual({ received: true, duplicate: true });
-    expect(insert).toHaveBeenCalledTimes(1);
-    expect(rpc).not.toHaveBeenCalled();
+    expect(rpc).toHaveBeenCalledTimes(1);
   });
 
-  it("award fallito → ledger ripulito + 500 (Stripe ritrasmette, P1)", async () => {
-    const { insert, rpc, del, delEq } = makeAdmin({ rpcError: true });
+  it("DB fallito: 500 perché Stripe deve ritentare l'intera transazione", async () => {
+    const { rpc } = makeAdmin({ rpcError: true });
     const event = boostEvent("evt_award_fail");
-
     const res = await postEvent(event, signPayload(JSON.stringify(event)));
-
     expect(res.status).toBe(500);
     await expect(res.json()).resolves.toEqual({ error: "Evento non processato. Riprova." });
-    expect(insert).toHaveBeenCalledWith({ id: "evt_award_fail" });
-    expect(rpc).toHaveBeenCalledWith("award_jury_credit", { p_user_id: "user-1", p_amount: 5 });
-    expect(del).toHaveBeenCalledTimes(1);
-    expect(delEq).toHaveBeenCalledWith("id", "evt_award_fail");
+    expect(rpc).toHaveBeenCalledExactlyOnceWith("process_stripe_event", {
+      p_event_id: "evt_award_fail",
+      p_user_id: "user-1",
+      p_action: "boost",
+    });
   });
 
-  it("update plan fallito → ledger ripulito + 500", async () => {
-    const { rpc, del, delEq } = makeAdmin({ updateError: true });
+  it("pro_monthly: plan pro tramite RPC atomica", async () => {
+    const { rpc } = makeAdmin();
     const event = {
-      ...boostEvent("evt_plan_fail"),
-      data: {
-        object: {
-          id: "cs_test_plan",
-          object: "checkout.session",
-          metadata: { userId: "user-1", product: "pro_monthly" },
-        },
-      },
+      ...boostEvent("evt_plan"),
+      data: { object: { id: "cs_pro", object: "checkout.session", metadata: { userId: "user-1", product: "pro_monthly" } } },
     } as unknown as Stripe.Event;
-
     const res = await postEvent(event, signPayload(JSON.stringify(event)));
-
-    expect(res.status).toBe(500);
-    await expect(res.json()).resolves.toEqual({ error: "Evento non processato. Riprova." });
-    expect(rpc).not.toHaveBeenCalled();
-    expect(delEq).toHaveBeenCalledWith("id", "evt_plan_fail");
+    expect(res.status).toBe(200);
+    expect(rpc).toHaveBeenCalledExactlyOnceWith("process_stripe_event", {
+      p_event_id: "evt_plan",
+      p_user_id: "user-1",
+      p_action: "pro",
+    });
   });
 
-  it("firma invalida → 400, nessuna scrittura", async () => {
-    const { insert, rpc } = makeAdmin();
+  it("firma invalida: 400 e nessuna scrittura", async () => {
+    const { rpc } = makeAdmin();
     const event = boostEvent("evt_bad_sig");
-
     const res = await postEvent(event, signPayload(JSON.stringify(event), "whsec_altro"));
-
     expect(res.status).toBe(400);
     await expect(res.json()).resolves.toEqual({ error: "Firma non valida." });
-    expect(insert).not.toHaveBeenCalled();
     expect(rpc).not.toHaveBeenCalled();
   });
 
-  it("firma mancante → 400", async () => {
-    const { insert } = makeAdmin();
+  it("firma mancante: 400", async () => {
+    const { rpc } = makeAdmin();
     const event = boostEvent("evt_no_sig");
-
     const res = await POST(
       new Request("http://localhost:3000/api/stripe/webhook", {
         method: "POST",
         body: JSON.stringify(event),
       }) as unknown as NextRequest
     );
-
     expect(res.status).toBe(400);
-    expect(insert).not.toHaveBeenCalled();
+    expect(rpc).not.toHaveBeenCalled();
   });
 
-  it("webhook non configurato → 503", async () => {
+  it("webhook non configurato: 503", async () => {
     makeAdmin();
     delete process.env.STRIPE_WEBHOOK_SECRET;
     const event = boostEvent("evt_no_conf");
-
     const res = await postEvent(event, signPayload(JSON.stringify(event)));
-
     expect(res.status).toBe(503);
   });
 
-  it("customer.subscription.deleted → plan free", async () => {
-    const { update, updateEq } = makeAdmin();
+  it("subscription.deleted: plan free tramite RPC atomica", async () => {
+    const { rpc } = makeAdmin();
     const event = subscriptionDeletedEvent();
-
     const res = await postEvent(event, signPayload(JSON.stringify(event)));
-
     expect(res.status).toBe(200);
     await expect(res.json()).resolves.toEqual({ received: true });
-    expect(update).toHaveBeenCalledWith({ plan: "free" });
-    expect(updateEq).toHaveBeenCalledWith("id", "user-1");
+    expect(rpc).toHaveBeenCalledExactlyOnceWith("process_stripe_event", {
+      p_event_id: "evt_sub_del_1",
+      p_user_id: "user-1",
+      p_action: "free",
+    });
   });
 
-  it("evento boost con verify sull'SDK reale: constructEvent accetta la firma manuale", () => {
-    // Guardia del test stesso: la firma costruita a mano deve essere valida
-    // anche per stripe.webhooks.constructEvent (lo stesso check del handler).
+  it("evento sconosciuto: ack senza scritture", async () => {
+    const { rpc } = makeAdmin();
+    const event = { ...boostEvent("evt_other"), type: "customer.created" } as unknown as Stripe.Event;
+    const res = await postEvent(event, signPayload(JSON.stringify(event)));
+    expect(res.status).toBe(200);
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it("l'SDK reale Stripe accetta la firma HMAC del test", () => {
     const payload = JSON.stringify(boostEvent("evt_construct"));
-    const signature = signPayload(payload);
-    const verified = stripe().webhooks.constructEvent(payload, signature, SECRET);
+    const verified = stripe().webhooks.constructEvent(payload, signPayload(payload), SECRET);
     expect(verified.type).toBe("checkout.session.completed");
   });
 });

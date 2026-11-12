@@ -1,3 +1,6 @@
+/* Google Fonts loaded by the browser, not at Next.js build time.
+   Revisit self-hosting before public launch (privacy/offline resilience). */
+@import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@800&family=Fraunces:ital,wght@0,300;0,400;0,600;1,300;1,400;1,600&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap");
 @import "tailwindcss";
 
 /* vado bene? — token da docs/BRAND.md §4 e §5. Nessun altro colore. */
@@ -14,15 +17,19 @@
   --color-line: rgba(242, 233, 216, 0.2);
 }
 
-/* Font (BRAND.md §5): pattern Tailwind 4 + next/font. `inline` risolve i valori a
-   build time nei utilities (niente emissione :root che collide con le variabili
-   di next/font su <html>). --font-body è Inter dal layout.tsx: il preflight
-   applica --font-sans (che la referenzia) al body. */
+/* Font ufficiali del brand, con fallback locale se Google Fonts non risponde. */
+:root {
+  --vb-font-display: "Fraunces";
+  --vb-font-logo: "Bricolage Grotesque";
+  --vb-font-body: "Inter";
+  --vb-font-mono: "IBM Plex Mono";
+}
+
 @theme inline {
-  --font-sans: var(--font-body), ui-sans-serif, system-ui, sans-serif;
-  --font-display: var(--font-display), serif;
-  --font-logo: var(--font-logo), sans-serif;
-  --font-mono: var(--font-mono), monospace;
+  --font-sans: var(--vb-font-body), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--vb-font-display), serif;
+  --font-logo: var(--vb-font-logo), sans-serif;
+  --font-mono: var(--vb-font-mono), monospace;
 }
 
 /* iOS Safari: colore fisso dietro tutto, mai trasparenze sul body */

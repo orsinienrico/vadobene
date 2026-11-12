@@ -20,7 +20,25 @@ import { track } from "@/lib/analytics";
  * Stato e transizioni vivono in `flow-machine.ts` (reducer puro); qui restano
  * solo fetch ed effetti, che dispatchano azioni.
  */
-export function Flow() {
+export function Flow({ enabled = true }: { enabled?: boolean }) {
+  if (!enabled) {
+    return (
+      <section className="mx-auto max-w-[680px] px-6 pb-[110px] pt-[72px] text-center">
+        <h2 className="font-display text-[clamp(28px,3.6vw,40px)] font-normal">
+          Anteprima del prodotto
+        </h2>
+        <p className="mt-4 text-[15px] leading-[1.7] text-muted">
+          Il servizio non è ancora attivo. Puoi esplorare il sito, ma la
+          raccolta delle foto e i pagamenti restano disabilitati finché
+          privacy, database e tempi di risposta non saranno verificati.
+        </p>
+      </section>
+    );
+  }
+  return <LiveFlow />;
+}
+
+function LiveFlow() {
   const [state, dispatch] = useFlowMachine();
   const { occasions, stage, photo, occasion, verdict, error, submitting, scanSlow, jury, summary } =
     state;

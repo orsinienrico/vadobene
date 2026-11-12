@@ -1,5 +1,7 @@
 # vado bene?
 
+> **Release management (2026-11-12):** see [docs/RELEASE-OPERATIONS.md](docs/RELEASE-OPERATIONS.md) for the live Vercel/Git workflow, database migration order, and blockers before launch.
+
 PWA mobile-first: fotografi il tuo outfit, dici per cosa; in cinque secondi un primo parere automatico; poi cinque persone vere che non ti conoscono rispondono in tre minuti, alla cieca. Per ricevere cinque voti ne dà cinque.
 
 > Docs di riferimento: [docs/PRODUCT-SPEC.md](docs/PRODUCT-SPEC.md), [docs/BRAND.md](docs/BRAND.md), [docs/prototype/vadobene-prototype.html](docs/prototype/vadobene-prototype.html). Regole di lavoro in [CLAUDE.md](CLAUDE.md).

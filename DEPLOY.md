@@ -1,5 +1,7 @@
 # DEPLOY — vado bene?
 
+> **Operational update (2026-11-12):** [docs/RELEASE-OPERATIONS.md](docs/RELEASE-OPERATIONS.md) supersedes the older Vercel CLI workflow and Hobby cron guidance below. The deployment workflow is now Docker fallback only.
+
 Checklist di rilascio: Vercel (primary) + Docker (self-host/replicabile). Ultimo aggiornamento: 2026-09-26.
 
 ---
