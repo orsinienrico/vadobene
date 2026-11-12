@@ -47,3 +47,10 @@ Registro delle scelte non coperte da spec/brand (CLAUDE.md: scegli l'opzione pi�
 | 2026-09-26 | Coverage: soglia lines 75 su `src/lib` (misurata 90,44%), esclusioni wrapper SDK (stripe/email/anthropic) | Soglia onesta e sostenibile; i wrapper sono testabili via test di contratto, non di integrazione |
 | 2026-09-26 | Copy onesto sulle promesse: privacy (cancellazione 24h sempre, niente keep_photo finché non implementata), hero ("Il primo parere, senza registrazione"), gate auth (anticipa l'uscita), boost ("anche dopo") | Founder challenge: promesse non mantenute nel copy; le frasi GDPR-sensitive dicono solo ciò che il sistema fa |
 | 2026-09-26 | `trackServer` PostHog server-side via Capture API diretta (niente posthog-node), fire-and-forget con timeout 3s | Gli eventi webhook (boost_purchased, pro_subscribed) senza nuova dipendenza; l'analitica non deve mai far fallire l'effetto |
+
+
+## 2026-11-12 — Next.js security release and font loading in CI
+
+- Next.js 15.3.4 was blocked by Vercel as vulnerable. Upgrade to 15.5.29 (maintenance LTS), with matching eslint-config and regenerated pnpm lockfile.
+- In GitHub Actions the patched next/font/google loader could not parse the remote font response during `next build`. For deterministic builds, load the **same four official brand families** via a runtime CSS import and CSS variables rather than build-time downloads. This is a temporary technical choice: self-host the licensed fonts before public launch to improve privacy, cache/offline behavior and determinism. Font names and weights stay aligned with BRAND.md.
+- Cron endpoints are fail-closed when CRON_SECRET is absent; only Authorization Bearer is accepted. The earlier optional-secret design exposed service-role routes if production env was incomplete.
