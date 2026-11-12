@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json.schemastore.org/wrangler.json",
+  "name": "vadobene-scheduler",
+  "main": "index.ts",
+  "compatibility_date": "2026-10-15",
+  "workers_dev": false,
+  "triggers": {
+    "crons": ["* * * * *", "0 * * * *"]
+  },
+  "vars": {
+    "APP_ORIGIN": "https://vadobene.app"
+  },
+  "observability": { "enabled": true }
+}
