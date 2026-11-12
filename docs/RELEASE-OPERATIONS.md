@@ -55,3 +55,7 @@ Provision an external trusted scheduler (or upgrade to Vercel Pro and configure 
 - Enforced master protection (recommended), incident monitoring and rollback rehearsal.
 
 **Do not release to real users until these are resolved.**
+
+## Font privacy follow-up
+
+The CI-compatible font loader currently requests the exact brand fonts via Google Fonts at runtime. Before public launch, replace it with approved locally hosted font assets to avoid third-party calls from visitor browsers and restore offline styling consistency. Track this in the launch validation.
