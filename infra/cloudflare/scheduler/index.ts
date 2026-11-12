@@ -41,8 +41,9 @@ export async function runScheduledTask(
   // A short retry handles transient Vercel 429/5xx without duplicate effects:
   // close-juries uses claim_jury_close, expire-photos selects unexpired records.
   for (let attempt = 0; attempt < 2; attempt++) {
+    let res: Response;
     try {
-      const res = await transport(url, {
+      res = await transport(url, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${env.CRON_SECRET}`,
@@ -50,15 +51,16 @@ export async function runScheduledTask(
         },
         redirect: "error",
       });
-      if (res.ok) return;
-      if (res.status < 500 && res.status !== 429) {
-        throw new Error(`Scheduled task ${cron} HTTP ${res.status}`);
-      }
-      if (attempt === 1) {
-        throw new Error(`Scheduled task ${cron} HTTP ${res.status} after retry`);
-      }
     } catch (err) {
       if (attempt === 1) throw err;
+      continue;
+    }
+    if (res.ok) return;
+    if (res.status < 500 && res.status !== 429) {
+      throw new Error(`Scheduled task ${cron} HTTP ${res.status}`);
+    }
+    if (attempt === 1) {
+      throw new Error(`Scheduled task ${cron} HTTP ${res.status} after retry`);
     }
   }
 }
