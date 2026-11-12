@@ -25,8 +25,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Upgrade supported Next.js LTS and refresh pnpm lockfile
         run: |
-          pnpm add -E next@15.5.29
-          pnpm add -DE eslint-config-next@15.5.29
+          pnpm add -w -E next@15.5.29
+          pnpm add -w -D -E eslint-config-next@15.5.29
       - name: Commit patched dependencies and remove one-time workflow
         run: |
           set -euo pipefail
