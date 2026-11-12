@@ -1,0 +1,38 @@
+# One-shot, branch-scoped lockfile generation on GitHub runner.
+# The job removes this workflow in the same commit as the dependency update.
+name: Patch Next.js (one-time)
+on:
+  push:
+    branches:
+      - fix/release-readiness-2026-11-12
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.repository == 'orsinienrico/vadobene' && github.ref == 'refs/heads/fix/release-readiness-2026-11-12'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Upgrade supported Next.js LTS and refresh pnpm lockfile
+        run: |
+          pnpm add -E next@15.5.29
+          pnpm add -DE eslint-config-next@15.5.29
+      - name: Commit patched dependencies and remove one-time workflow
+        run: |
+          set -euo pipefail
+          rm .github/workflows/patch-next-once.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json pnpm-lock.yaml .github/workflows/patch-next-once.yml
+          git commit -m "chore(deps): security-update-produced Next.js 15.5.29"
+          git push origin HEAD:fix/release-readiness-2026-11-12
