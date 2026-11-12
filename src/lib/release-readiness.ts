@@ -6,7 +6,7 @@
  * SCHEDULER_CONFIRMED is an operator assertion, not a runtime guarantee:
  * set it only after verifying authenticated periodic close-juries/expire-photos.
  */
-export function releaseReadiness(env: NodeJS.ProcessEnv) {
+export function releaseReadiness(env: Readonly<Record<string, string | undefined>>) {
   const database =
     Boolean(env.NEXT_PUBLIC_SUPABASE_URL) &&
     Boolean(env.NEXT_PUBLIC_SUPABASE_ANON_KEY) &&
