@@ -147,7 +147,7 @@ function makeCronAdmin(opts: {
 
 function get(url = "http://localhost:3000/api/cron/close-juries", authorized = true) {
   const secret = process.env.CRON_SECRET;
-  const headers = authorized && secret ? { authorization: "Bearer " + secret } : {};
+  const headers: Record<string, string> = authorized && secret ? { authorization: "Bearer " + secret } : {};
   return GET(new NextRequest(url, { headers }));
 }
 
