@@ -1,35 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Fraunces, Bricolage_Grotesque, Inter, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
-
-const fraunces = Fraunces({
-  subsets: ["latin"],
-  weight: ["300", "400", "600"],
-  style: ["normal", "italic"],
-  variable: "--font-display",
-  display: "swap",
-});
-
-const bricolage = Bricolage_Grotesque({
-  subsets: ["latin"],
-  weight: "800",
-  variable: "--font-logo",
-  display: "swap",
-});
-
-const inter = Inter({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  variable: "--font-body",
-  display: "swap",
-});
-
-const plexMono = IBM_Plex_Mono({
-  subsets: ["latin"],
-  weight: ["400", "500"],
-  variable: "--font-mono",
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: "vado bene? — Lo specchio che non mente",
@@ -52,7 +22,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="it" className={`${fraunces.variable} ${bricolage.variable} ${inter.variable} ${plexMono.variable}`}>
+    <html lang="it">
       <body>
         <div id="bgFill" />
         {children}
