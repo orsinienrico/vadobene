@@ -6,7 +6,7 @@
 - Vercel project: `vadobene`, ID `prj_GvdLkED3XeWQzrWBBwwHe1eiaIxP`.
 - Vercel team: `team_dhdJkA7tBMCCDdN4HMhdvHZu` (Hobby).
 - Git integration: Vercel automatically builds the repository's linked branches.
-- Framework: Next.js; Node 22.x; functions in `fra1`.
+- Framework: Next.js **15.5.29** (security patched); Node 22.x; functions in `fra1`.
 - GitHub CI: lint, typecheck, unit tests, mock E2E (and real E2E on master).
 - GitHub workflow `.github/workflows/deploy.yml`: manual **Docker fallback** only.
 - No Vercel CLI deploy job, no GitHub VERCEL_TOKEN needed.
