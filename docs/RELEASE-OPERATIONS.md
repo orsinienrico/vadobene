@@ -49,12 +49,32 @@ Provision an external trusted scheduler (or upgrade to Vercel Pro and configure 
 
 - Supabase project access and confirmation that migrations 0001–0004 are installed.
 - Vercel environment variables configured, plus a safe staging Supabase/Anthropic environment for E2E.
-- Reliable scheduler for `close-juries` and `expire-photos`.
+- Deploy and verify the prepared Cloudflare Worker in `infra/cloudflare/scheduler/` with the Vercel production `CRON_SECRET`. It has schedules for close-juries (each minute) and expire-photos (hourly). Set `SCHEDULER_CONFIRMED=true` **only** when both have passed real integration tests.
 - Production domain ownership and DNS validation, if `vadobene.app` will be attached.
 - End-to-end validation of signed photo delivery, payments, and expiration.
 - Enforced master protection (recommended), incident monitoring and rollback rehearsal.
 
 **Do not release to real users until these are resolved.**
+
+## Current prelaunch protection
+
+The server-side homepage checks `releaseReadiness(process.env)` on Vercel.
+If the requirements are not configured, visitors see a non-interactive
+prelaunch message rather than an upload flow. Locally (without `VERCEL_ENV`),
+the mock E2E experience remains testable.
+
+`GET /api/health` is a dependency-free liveness check and can be HTTP 200
+even when configuration is absent. `GET /api/readiness` returns HTTP 503
+until database, AI, scheduler, payment, email and public site URL
+configuration are present. Configuration-only: it does not check
+database migrations, API-key validity or real scheduler executions.
+See `infra/cloudflare/scheduler/README.md`.
+
+Vercel `CRON_SECRET` was generated and stored in encrypted environment
+variables separately for Production and Preview/Development. The actual
+Cloudflare Worker secret is **not** deployed: Cloudflare is not connected.
+Never put any of these secrets in GitHub or public docs.
+
 
 ## Font privacy follow-up
 
