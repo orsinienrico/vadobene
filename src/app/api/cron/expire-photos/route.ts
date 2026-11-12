@@ -12,13 +12,12 @@ export const maxDuration = 120;
  */
 export async function GET(req: NextRequest) {
   const secret = process.env.CRON_SECRET;
-  if (secret) {
-    const provided =
-      req.headers.get("authorization")?.replace("Bearer ", "") ??
-      req.nextUrl.searchParams.get("secret");
-    if (provided !== secret) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  // Fail closed: mai esporre un cron che usa service_role se manca il secret.
+  if (!secret) {
+    return NextResponse.json({ error: "Cron non configurato." }, { status: 503 });
+  }
+  if (req.headers.get("authorization") !== "Bearer " + secret) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const supabase = createAdminClient();
