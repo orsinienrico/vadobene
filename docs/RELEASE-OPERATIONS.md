@@ -100,3 +100,7 @@ Migration `0005_vote_atomic_and_ai_unique.sql` repairs a defect in 0003: `UNIQUE
 Migration `0006_restrict_client_mutations.sql` revokes direct INSERT, UPDATE and DELETE on `public.requests` from `anon`/`authenticated`, and removes client-side write policies on the private `outfits` bucket. These operations are now done by trusted Route Handlers with the service-role client, with authentication and ownership checks beforehand. The server signs 60-second outfit photo URLs for eligible jurors; an ordinary juror's own Supabase client is intentionally unable to sign another user's private files. Existing user read/RLS and own-photo read remain unchanged.
 
 **Go-live database order:** 0001 → 0002 → 0003 → 0004 → 0005 → 0006. Verify the actual Supabase RLS policies before accepting uploads. The CI tests mock Supabase; they are not a substitute for a live DB integration test.
+
+## 2026-11-13 — prevent client-inserted paid/credit profiles
+
+An additional P0 privilege escalation existed in migration 0001: `users insert own` checked only `auth.uid()=id`, allowing a first insert with arbitrary `plan='pro'` or `jury_credit`. Migration 0006 now revokes direct client INSERT and remaining column UPDATE privilege for `public.users`; `/api/verdict` creates a minimal profile via service_role only, with `id` alone and `ignoreDuplicates=true`. No account can grant itself credits or Pro via the anonymous Supabase key. Before activation, verify this against a real authenticated anon client and RLS policies.

@@ -3,6 +3,14 @@
 -- and privacy checks. Apply AFTER deploying server-side write support,
 -- and BEFORE setting LAUNCH_ENABLED=true.
 
+-- Also close a privilege escalation in the old users INSERT policy: a newly
+-- authenticated user could previously insert their own row with plan='pro'
+-- or jury_credit=999999. Only the trusted server creates user profiles.
+revoke insert, update, delete on public.users from anon, authenticated;
+revoke update (id) on public.users from anon, authenticated;
+drop policy if exists "users insert own" on public.users;
+drop policy if exists "users update own id" on public.users;
+
 revoke insert, update, delete on public.requests from anon, authenticated;
 
 drop policy if exists "requests insert own" on public.requests;
