@@ -1,3 +1,5 @@
+import { requireLiveInteractions } from "@/lib/launch-control";
+import { requireTrustedMutation } from "@/lib/request-security";
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { JuryOpenRequest } from "@/lib/contracts";
@@ -19,6 +21,11 @@ const JURY_COST = 5;
  * mai una doppia spesa. Su errore dopo il claim, revert a ai_done.
  */
 export async function POST(req: NextRequest) {
+  const unavailable = requireLiveInteractions();
+  if (unavailable) return unavailable;
+  const forbiddenOrigin = requireTrustedMutation(req);
+  if (forbiddenOrigin) return forbiddenOrigin;
+
   let body: unknown = {};
   try {
     body = await req.json();

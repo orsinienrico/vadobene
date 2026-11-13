@@ -1,3 +1,4 @@
+import { liveInteractionsEnabled } from "@/lib/launch-control";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
@@ -18,6 +19,7 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
+  if (!liveInteractionsEnabled()) return { title: "vado bene?" };
   if (!/^[0-9a-f-]{36}$/i.test(id)) return { title: "vado bene?" };
 
   const supabase = createAdminClient();
@@ -49,6 +51,7 @@ export async function generateMetadata({
  */
 export default async function CardPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  if (!liveInteractionsEnabled()) notFound();
 
   // UUID valido altrimenti notFound.
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();

@@ -1,3 +1,4 @@
+import { requireLiveInteractions } from "@/lib/launch-control";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { MAX_PER_SESSION, rankCandidates } from "@/lib/queue-rank";
@@ -12,6 +13,9 @@ export const dynamic = "force-dynamic";
  * Il contatore di sessione è server-side (cookie), non localStorage.
  */
 export async function GET() {
+  const unavailable = requireLiveInteractions();
+  if (unavailable) return unavailable;
+
   const supabase = await createClient();
 
   const { data: userData } = await supabase.auth.getUser();

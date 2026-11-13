@@ -1,3 +1,4 @@
+import { requireTrustedMutation } from "@/lib/request-security";
 import { NextResponse } from "next/server";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
 
@@ -8,7 +9,12 @@ export const maxDuration = 60;
  * POST /api/me/delete-all — "Cancella tutto" (Fase 4): hard delete.
  * Elimina utente, richieste, voti, foto. Zero righe residue.
  */
-export async function POST() {
+export async function POST(req: Request) {
+  const forbiddenOrigin = requireTrustedMutation(req);
+  if (forbiddenOrigin) return forbiddenOrigin;
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    return NextResponse.json({ error: "Cancellazione temporaneamente non disponibile." }, { status: 503 });
+  }
   const supabase = await createClient();
   const { data: userData } = await supabase.auth.getUser();
   const userId = userData?.user?.id;
@@ -19,14 +25,20 @@ export async function POST() {
   const admin = createAdminClient();
 
   // Foto dal bucket prima di cancellare le requests (il path serve ancora).
-  const { data: requests } = await admin
+  const { data: requests, error: listError } = await admin
     .from("requests")
     .select("photo_path")
     .eq("user_id", userId)
     .not("photo_path", "is", null);
 
+  if (listError) {
+    return NextResponse.json({ error: "Impossibile verificare le fotografie." }, { status: 500 });
+  }
   if (requests && requests.length > 0) {
-    await admin.storage.from("outfits").remove(requests.map((r) => r.photo_path!));
+    const { error: storageError } = await admin.storage.from("outfits").remove(requests.map((r) => r.photo_path!));
+    if (storageError) {
+      return NextResponse.json({ error: "Cancellazione fotografie non riuscita." }, { status: 500 });
+    }
   }
 
   // ON DELETE CASCADE su requests/votes/reports/users: basta l'utente.

@@ -1,3 +1,6 @@
+import { trustedSiteOrigin } from "@/lib/request-security";
+import { requireLiveInteractions } from "@/lib/launch-control";
+import { requireTrustedMutation } from "@/lib/request-security";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
@@ -14,6 +17,11 @@ const CheckoutBody = z.object({
  * Boost €0,99 (una tantum) · Pro €3,99/mese · Pro €29/anno.
  */
 export async function POST(req: NextRequest) {
+  const unavailable = requireLiveInteractions();
+  if (unavailable) return unavailable;
+  const forbiddenOrigin = requireTrustedMutation(req);
+  if (forbiddenOrigin) return forbiddenOrigin;
+
   const supabase = await createClient();
   const { data: userData } = await supabase.auth.getUser();
   const userId = userData?.user?.id;
@@ -25,6 +33,9 @@ export async function POST(req: NextRequest) {
   if (!body.success) {
     return NextResponse.json({ error: "Prodotto non valido." }, { status: 400 });
   }
+
+  const siteOrigin = trustedSiteOrigin();
+  if (!siteOrigin) return NextResponse.json({ error: "Dominio di pagamento non configurato." }, { status: 503 });
 
   const priceId =
     body.data.product === "boost"
@@ -50,8 +61,8 @@ export async function POST(req: NextRequest) {
     metadata: { userId, product: body.data.product },
     subscription_data: body.data.product === "boost" ? undefined : { metadata: { userId } },
     customer_email: user?.email ?? undefined,
-    success_url: `${req.nextUrl.origin}/me`,
-    cancel_url: `${req.nextUrl.origin}/me`,
+    success_url: `${siteOrigin}/me`,
+    cancel_url: `${siteOrigin}/me`,
   });
 
   return NextResponse.json({ url: session.url });
