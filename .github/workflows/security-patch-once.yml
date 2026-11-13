@@ -1,0 +1,51 @@
+# Temporary trusted branch job: install patched dependencies and regenerate lockfile.
+# Removes itself in the same commit; no secrets or production environments.
+name: Patch audited production dependencies (one-time)
+on:
+  push:
+    branches:
+      - security/continuous-scanning-2026-11-13
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.repository == 'orsinienrico/vadobene' && github.ref == 'refs/heads/security/continuous-scanning-2026-11-13'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Patch vulnerable runtime packages and regenerate pnpm lockfile
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const p = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+          p.dependencies.sharp = '^0.35.5';
+          p.dependencies.zod = '^4.6.6';
+          p.pnpm = { ...p.pnpm, overrides: {
+            ...p.pnpm?.overrides,
+            dompurify: '^3.4.17',
+            postcss: '^8.5.18',
+            'source-map-js': '^1.2.2',
+          } };
+          fs.writeFileSync('package.json', JSON.stringify(p, null, 2) + '\n');
+          NODE
+          pnpm install --no-frozen-lockfile --ignore-scripts
+      - name: Commit patched dependency graph and remove one-time job
+        run: |
+          set -euo pipefail
+          rm .github/workflows/security-patch-once.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add package.json pnpm-lock.yaml .github/workflows/security-patch-once.yml
+          git commit -m 'fix(deps): patch audited critical/high runtime vulnerabilities'
+          git push origin HEAD:security/continuous-scanning-2026-11-13
