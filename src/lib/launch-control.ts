@@ -8,7 +8,7 @@ import { releaseReadiness } from "@/lib/release-readiness";
 export function liveInteractionsEnabled(
   env: Readonly<Record<string, string | undefined>> = process.env
 ): boolean {
-  if (!env.VERCEL_ENV && env.NODE_ENV === "development") return true;
+  if (!env.VERCEL_ENV && (env.NODE_ENV === "development" || env.NODE_ENV === "test")) return true;
   return env.LAUNCH_ENABLED === "true" && releaseReadiness(env).configured;
 }
 
