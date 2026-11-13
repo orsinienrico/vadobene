@@ -1,7 +1,7 @@
 import { requireLiveInteractions } from "@/lib/launch-control";
 import { requireTrustedMutation } from "@/lib/request-security";
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { getAiVerdict } from "@/lib/anthropic";
 import { AiVerdict, VerdictRequest } from "@/lib/contracts";
 import sharp from "sharp";
@@ -36,6 +36,7 @@ export async function POST(req: NextRequest) {
   const { photo, occasionSlug } = parsed.data;
 
   const supabase = await createClient();
+  const admin = createAdminClient();
 
   // Occasione deve esistere (niente occasioni libere nell'MVP).
   const { data: occasion, error: occErr } = await supabase
@@ -56,8 +57,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Sessione non disponibile." }, { status: 500 });
     }
     userId = anon.user.id;
-    // La riga users non esiste per l'anonimo finché non si registra; la creo.
-    await supabase.from("users").upsert({ id: userId });
+    // La riga users viene creata SOLO dal server, dopo la verifica auth.
+  }
+
+  // I client anon/authenticated non possono creare profili con crediti o
+  // piano Pro arbitrari. Upsert solo service_role e soltanto sul campo id.
+  const { error: profileError } = await admin.from("users").upsert(
+    { id: userId }, { onConflict: "id", ignoreDuplicates: true }
+  );
+  if (profileError) {
+    return NextResponse.json({ error: "Profilo non disponibile." }, { status: 500 });
   }
 
   // Resize server-side se > 1280px (doppia garanzia al resize client).
@@ -94,17 +103,19 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Per impedire upload diretti via chiave anonima, solo il server può
+  // scrivere nel bucket privato e nella tabella requests.
   // Salva la foto in bucket privato: {user_id}/{request_id}.jpg
   const requestId = crypto.randomUUID();
   const photoPath = `${userId}/${requestId}.jpg`;
-  const { error: upErr } = await supabase.storage
+  const { error: upErr } = await admin.storage
     .from("outfits")
     .upload(photoPath, photoBuffer, { contentType: "image/jpeg", upsert: false });
   if (upErr) {
     return NextResponse.json({ error: "Foto non salvata. Riprova." }, { status: 500 });
   }
 
-  const { data: request, error: reqErr } = await supabase
+  const { data: request, error: reqErr } = await admin
     .from("requests")
     .insert({
       id: requestId,
@@ -119,7 +130,7 @@ export async function POST(req: NextRequest) {
 
   if (reqErr) {
     // Never leak orphaned photos if the database insert fails.
-    const { error: cleanupError } = await supabase.storage.from("outfits").remove([photoPath]);
+    const { error: cleanupError } = await admin.storage.from("outfits").remove([photoPath]);
     if (cleanupError) console.error("[verdict] orphan-photo cleanup failed", { requestId });
     return NextResponse.json({ error: "Richiesta non salvata. Riprova." }, { status: 500 });
   }

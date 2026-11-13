@@ -90,3 +90,21 @@ The CI-compatible font loader currently requests the exact brand fonts via Googl
 - Database migrations and end-to-end private photo deletion cannot be verified until an authorized Supabase connection exists. Do **not** enable launches simply because the CI is green.
 - Privacy copy must not promise deletion *before* 24h when the actual cron deletes only after the 24h cutoff; the operational retention guarantee and final GDPR notice require review before public launch.
 - GitHub `master` still requires repository ruleset/branch protection and mandatory status checks; current GitHub tools cannot directly configure that setting.
+
+## 2026-11-13 — vote schema + atomic awards
+
+Migration `0005_vote_atomic_and_ai_unique.sql` repairs a defect in 0003: `UNIQUE NULLS NOT DISTINCT` prevented more than one AI vote per request. It replaces that with a partial unique index on non-null `juror_id`. It also revokes direct authenticated INSERT on `votes` and adds `record_jury_vote` (service_role only). This single Postgres transaction verifies the deadline, owner, cap of 5, uniqueness and inserts a vote while awarding exactly one credit and juror point. Run migration 0005 before the new API route is deployed to any active environment. Existing closed/incomplete jury data is not modified. DB-level integration tests must be performed after Supabase connection.
+
+## 2026-11-13 — direct database/storage mutation lockdown
+
+Migration `0006_restrict_client_mutations.sql` revokes direct INSERT, UPDATE and DELETE on `public.requests` from `anon`/`authenticated`, and removes client-side write policies on the private `outfits` bucket. These operations are now done by trusted Route Handlers with the service-role client, with authentication and ownership checks beforehand. The server signs 60-second outfit photo URLs for eligible jurors; an ordinary juror's own Supabase client is intentionally unable to sign another user's private files. Existing user read/RLS and own-photo read remain unchanged.
+
+**Go-live database order:** 0001 → 0002 → 0003 → 0004 → 0005 → 0006. Verify the actual Supabase RLS policies before accepting uploads. The CI tests mock Supabase; they are not a substitute for a live DB integration test.
+
+## 2026-11-13 — prevent client-inserted paid/credit profiles
+
+An additional P0 privilege escalation existed in migration 0001: `users insert own` checked only `auth.uid()=id`, allowing a first insert with arbitrary `plan='pro'` or `jury_credit`. Migration 0006 now revokes direct client INSERT and remaining column UPDATE privilege for `public.users`; `/api/verdict` creates a minimal profile via service_role only, with `id` alone and `ignoreDuplicates=true`. No account can grant itself credits or Pro via the anonymous Supabase key. Before activation, verify this against a real authenticated anon client and RLS policies.
+
+## 2026-11-13 — recursive RLS policy mitigation
+
+Migration `0007_fix_recursive_rls.sql` removes a cycle between `requests SELECT` policies querying `votes` and `votes SELECT` policy querying `requests`. A restricted `SECURITY DEFINER` existence helper uses only `auth.uid()` (no arbitrary account-id argument), and the open-jury policy now requires an authenticated user. Test with real Supabase RLS as anonymous, owner, other juror, and service_role before enabling production. The canonical migration order is now 0001–0007.
