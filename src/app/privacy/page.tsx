@@ -20,19 +20,22 @@ export default function PrivacyPage() {
           nome, non il tuo profilo, non i tuoi follower. Tu non vedi chi ha risposto.
         </p>
         <p>
-          La foto serve solo per dare il parere: la vedono i cinque che rispondono, poi nessuno.
-          Per adesso non c&apos;è modo di tenerla: ogni foto viene cancellata entro 24 ore, sempre.
+          La foto serve per ottenere il parere. Durante il giurì può essere visualizzata
+          da altri partecipanti autorizzati mediante collegamenti temporanei.
+          Per le foto senza conservazione esplicita, la cancellazione automatica inizia
+          dopo 24 ore: i controlli periodici possono causare un ritardo rispetto alla soglia.
+          Non considerare la foto immediatamente cancellata quando il giurì termina.
         </p>
         <p>
           Qui si giudica l&apos;outfit, mai la persona. Le righe che parlano del tuo corpo non
           passano: un filtro le stoppa prima che tu le legga.
         </p>
         <p>
-          Puoi cancellare tutto — account, richieste, voti, foto — quando vuoi, dalla pagina{" "}
+          Puoi richiedere la cancellazione di account, richieste, voti e foto dalla pagina{" "}
           <a href="/me" className="underline decoration-gold/40 hover:decoration-gold">
             Il tuo account
           </a>
-          . Subito, senza scrivere a nessuno.
+          . Se la cancellazione non riesce, riceverai un errore anziché una falsa conferma.
         </p>
         <p className="text-muted">
           Per qualunque altra cosa: ciao@vadobene.app

@@ -3,8 +3,8 @@
 ## Current deployment model
 
 - Source: GitHub `orsinienrico/vadobene`, production branch `master`.
-- Vercel project: `vadobene`, ID `prj_GvdLkED3XeWQzrWBBwwHe1eiaIxP`.
-- Vercel team: `team_dhdJkA7tBMCCDdN4HMhdvHZu` (Hobby).
+- Vercel project: `vadobene` in the **currently connected EON team**, ID `prj_JnEWjSpEEDt30zdgZbIYCKOhuJ9r`.
+- Vercel team: `team_QYSDQHcilniTllqb9bf8iAoj` / `EON` (Hobby). An older `smtzjd5npb-2895's projects` scope is not accessible through the current connection and must not be confused with EON.
 - Git integration: Vercel automatically builds the repository's linked branches.
 - Framework: Next.js **15.5.29** (security patched); Node 22.x; functions in `fra1`.
 - GitHub CI: lint, typecheck, unit tests, mock E2E (and real E2E on master).
@@ -58,14 +58,14 @@ Provision an external trusted scheduler (or upgrade to Vercel Pro and configure 
 
 ## Current prelaunch protection
 
-The server-side homepage checks `releaseReadiness(process.env)` on Vercel.
+The homepage and all user-facing application APIs check `liveInteractionsEnabled(process.env)` on Vercel. Explicit `LAUNCH_ENABLED=true` is required in addition to configured providers and scheduler verification; otherwise requests fail with 503 before any database, AI or photo work.
 If the requirements are not configured, visitors see a non-interactive
 prelaunch message rather than an upload flow. Locally (without `VERCEL_ENV`),
 the mock E2E experience remains testable.
 
 `GET /api/health` is a dependency-free liveness check and can be HTTP 200
 even when configuration is absent. `GET /api/readiness` returns HTTP 503
-until database, AI, scheduler, payment, email and public site URL
+until the explicit launch flag and database, AI, scheduler, payment, email and public site URL
 configuration are present. Configuration-only: it does not check
 database migrations, API-key validity or real scheduler executions.
 See `infra/cloudflare/scheduler/README.md`.
@@ -79,3 +79,14 @@ Never put any of these secrets in GitHub or public docs.
 ## Font privacy follow-up
 
 The CI-compatible font loader currently requests the exact brand fonts via Google Fonts at runtime. Before public launch, replace it with approved locally hosted font assets to avoid third-party calls from visitor browsers and restore offline styling consistency. Track this in the launch validation.
+
+## 2026-11-13 — security review addendum
+
+- Production scope now is Vercel **EON**, not the legacy inaccessible scope. Do not assume environment variables, domains, or security policies from the previous scope are present in EON.
+- EON deployment protection is applied to **all** targets, including production aliases, until integrations and security go-live checks pass. Vercel settings also restrict fork deploys, source maps and directory listing.
+- `LAUNCH_ENABLED=false` is stored for all EON deployment targets, with separate encrypted `CRON_SECRET` values for production and non-production. Opening the UI does not authorize direct API calls: user-facing API routes have a server-side kill switch.
+- Stateful browser POST routes reject cross-origin requests, and Stripe checkout/portal callback URLs are derived only from the trusted configured site URL, never from request headers.
+- The account delete endpoint must not delete auth data if private Storage deletion failed. Images are re-encoded to JPEG to strip EXIF/GPS and bounded in size, with orphan cleanup on write failure.
+- Database migrations and end-to-end private photo deletion cannot be verified until an authorized Supabase connection exists. Do **not** enable launches simply because the CI is green.
+- Privacy copy must not promise deletion *before* 24h when the actual cron deletes only after the 24h cutoff; the operational retention guarantee and final GDPR notice require review before public launch.
+- GitHub `master` still requires repository ruleset/branch protection and mandatory status checks; current GitHub tools cannot directly configure that setting.
