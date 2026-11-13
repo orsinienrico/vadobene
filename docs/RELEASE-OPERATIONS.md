@@ -104,3 +104,7 @@ Migration `0006_restrict_client_mutations.sql` revokes direct INSERT, UPDATE and
 ## 2026-11-13 — prevent client-inserted paid/credit profiles
 
 An additional P0 privilege escalation existed in migration 0001: `users insert own` checked only `auth.uid()=id`, allowing a first insert with arbitrary `plan='pro'` or `jury_credit`. Migration 0006 now revokes direct client INSERT and remaining column UPDATE privilege for `public.users`; `/api/verdict` creates a minimal profile via service_role only, with `id` alone and `ignoreDuplicates=true`. No account can grant itself credits or Pro via the anonymous Supabase key. Before activation, verify this against a real authenticated anon client and RLS policies.
+
+## 2026-11-13 — recursive RLS policy mitigation
+
+Migration `0007_fix_recursive_rls.sql` removes a cycle between `requests SELECT` policies querying `votes` and `votes SELECT` policy querying `requests`. A restricted `SECURITY DEFINER` existence helper uses only `auth.uid()` (no arbitrary account-id argument), and the open-jury policy now requires an authenticated user. Test with real Supabase RLS as anonymous, owner, other juror, and service_role before enabling production. The canonical migration order is now 0001–0007.
