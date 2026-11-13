@@ -1,3 +1,5 @@
+import { requireLiveInteractions } from "@/lib/launch-control";
+import { requireTrustedMutation } from "@/lib/request-security";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getAiVerdict } from "@/lib/anthropic";
@@ -15,6 +17,11 @@ const MAX_SIDE = 1280;
  * unsafe_content → 422, foto non salvata, messaggio in voce brand.
  */
 export async function POST(req: NextRequest) {
+  const unavailable = requireLiveInteractions();
+  if (unavailable) return unavailable;
+  const forbiddenOrigin = requireTrustedMutation(req);
+  if (forbiddenOrigin) return forbiddenOrigin;
+
   let body: unknown;
   try {
     body = await req.json();
@@ -57,12 +64,12 @@ export async function POST(req: NextRequest) {
   let photoBuffer: Buffer;
   try {
     const raw = Buffer.from(photo.replace(/^data:[^;]+;base64,/, ""), "base64");
-    const image = sharp(raw);
-    const meta = await image.metadata();
-    photoBuffer =
-      meta.width && meta.width > MAX_SIDE
-        ? await image.resize({ width: MAX_SIDE, withoutEnlargement: true }).jpeg({ quality: 82 }).toBuffer()
-        : raw;
+    // Always re-encode, remove EXIF/GPS and limit decompression bombs.
+    photoBuffer = await sharp(raw, { limitInputPixels: 20_000_000, failOn: "error" })
+      .rotate()
+      .resize({ width: MAX_SIDE, height: MAX_SIDE, fit: "inside", withoutEnlargement: true })
+      .jpeg({ quality: 82 })
+      .toBuffer();
   } catch {
     return NextResponse.json({ error: "Non riesco a leggere la foto." }, { status: 400 });
   }
@@ -111,6 +118,9 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (reqErr) {
+    // Never leak orphaned photos if the database insert fails.
+    const { error: cleanupError } = await supabase.storage.from("outfits").remove([photoPath]);
+    if (cleanupError) console.error("[verdict] orphan-photo cleanup failed", { requestId });
     return NextResponse.json({ error: "Richiesta non salvata. Riprova." }, { status: 500 });
   }
 

@@ -2,12 +2,12 @@ import Link from "next/link";
 import { Brand } from "@/components/Brand";
 import { Hero } from "@/components/Hero";
 import { Flow } from "@/components/Flow";
-import { releaseReadiness } from "@/lib/release-readiness";
+import { liveInteractionsEnabled } from "@/lib/launch-control";
 
 export default function Home() {
   // Local development and Playwright mocks remain usable without external keys.
   // Vercel environments must pass the release gate before collecting photos.
-  const liveFlowEnabled = !process.env.VERCEL_ENV || releaseReadiness(process.env).configured;
+  const liveFlowEnabled = liveInteractionsEnabled(process.env);
   return (
     <>
       <nav className="fixed inset-x-0 top-0 z-50 flex items-center justify-between bg-gradient-to-b from-ink/95 to-transparent px-6 py-4">

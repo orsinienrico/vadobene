@@ -1,3 +1,4 @@
+import { liveInteractionsEnabled } from "@/lib/launch-control";
 import { NextResponse } from "next/server";
 import { releaseReadiness } from "@/lib/release-readiness";
 
@@ -9,7 +10,8 @@ export const dynamic = "force-dynamic";
  * Does not validate live credentials, DB migrations or actual delivery.
  */
 export async function GET() {
-  const { configured } = releaseReadiness(process.env);
+  const { configured: dependenciesConfigured } = releaseReadiness(process.env);
+  const configured = dependenciesConfigured && liveInteractionsEnabled(process.env);
   return NextResponse.json(
     { configured },
     {

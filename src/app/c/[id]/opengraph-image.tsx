@@ -1,3 +1,4 @@
+import { liveInteractionsEnabled } from "@/lib/launch-control";
 import { ImageResponse } from "next/og";
 import { createAdminClient } from "@/lib/supabase/server";
 import type { JurySummary } from "@/lib/contracts";
@@ -27,6 +28,7 @@ const COLORS = {
  */
 export default async function OgImage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  if (!liveInteractionsEnabled()) throw new Error("not found");
   if (!/^[0-9a-f-]{36}$/i.test(id)) {
     throw new Error("not found");
   }

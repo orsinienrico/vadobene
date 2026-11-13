@@ -1,3 +1,5 @@
+import { requireLiveInteractions } from "@/lib/launch-control";
+import { requireTrustedMutation } from "@/lib/request-security";
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { moderateNote } from "@/lib/moderation";
@@ -11,6 +13,11 @@ export const maxDuration = 30;
  * incrementa jury_credit e juror_score via RPC atomiche, restituisce { credit }.
  */
 export async function POST(req: NextRequest) {
+  const unavailable = requireLiveInteractions();
+  if (unavailable) return unavailable;
+  const forbiddenOrigin = requireTrustedMutation(req);
+  if (forbiddenOrigin) return forbiddenOrigin;
+
   let body: unknown;
   try {
     body = await req.json();

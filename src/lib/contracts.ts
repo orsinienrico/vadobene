@@ -38,7 +38,7 @@ export type NoteModeration = z.infer<typeof NoteModeration>;
  */
 
 export const VerdictRequest = z.object({
-  photo: z.string().min(1), // base64 (data URL accettato, strippato server-side)
+  photo: z.string().min(1).max(9_000_000), // bounded base64 (data URL accettato, strippato server-side)
   occasionSlug: z.string().min(1).max(64),
 });
 export type VerdictRequest = z.infer<typeof VerdictRequest>;
