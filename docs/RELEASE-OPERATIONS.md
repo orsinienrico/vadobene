@@ -108,3 +108,9 @@ An additional P0 privilege escalation existed in migration 0001: `users insert o
 ## 2026-11-13 — recursive RLS policy mitigation
 
 Migration `0007_fix_recursive_rls.sql` removes a cycle between `requests SELECT` policies querying `votes` and `votes SELECT` policy querying `requests`. A restricted `SECURITY DEFINER` existence helper uses only `auth.uid()` (no arbitrary account-id argument), and the open-jury policy now requires an authenticated user. Test with real Supabase RLS as anonymous, owner, other juror, and service_role before enabling production. The canonical migration order is now 0001–0007.
+
+## Automated security maintenance (2026-11-13)
+
+- GitHub Actions `.github/workflows/security.yml`: production pnpm dependency audit (fails on high/critical advisories), CodeQL javascript-typescript `security-extended` analysis, weekly schedule and PR/push checks.
+- Dependabot weekly npm/pnpm and GitHub Actions update PRs, never auto-merge. Review breaking changes and security advisories before release.
+- CI success is NOT an end-to-end security audit: remaining mandatory checks are Supabase RLS live assertions, pen testing the API under an authenticated anonymous session, Stripe webhook test deliveries, actual Cron Worker runs, retention measurement, and production incident alerting.
