@@ -94,3 +94,9 @@ The CI-compatible font loader currently requests the exact brand fonts via Googl
 ## 2026-11-13 — vote schema + atomic awards
 
 Migration `0005_vote_atomic_and_ai_unique.sql` repairs a defect in 0003: `UNIQUE NULLS NOT DISTINCT` prevented more than one AI vote per request. It replaces that with a partial unique index on non-null `juror_id`. It also revokes direct authenticated INSERT on `votes` and adds `record_jury_vote` (service_role only). This single Postgres transaction verifies the deadline, owner, cap of 5, uniqueness and inserts a vote while awarding exactly one credit and juror point. Run migration 0005 before the new API route is deployed to any active environment. Existing closed/incomplete jury data is not modified. DB-level integration tests must be performed after Supabase connection.
+
+## 2026-11-13 — direct database/storage mutation lockdown
+
+Migration `0006_restrict_client_mutations.sql` revokes direct INSERT, UPDATE and DELETE on `public.requests` from `anon`/`authenticated`, and removes client-side write policies on the private `outfits` bucket. These operations are now done by trusted Route Handlers with the service-role client, with authentication and ownership checks beforehand. The server signs 60-second outfit photo URLs for eligible jurors; an ordinary juror's own Supabase client is intentionally unable to sign another user's private files. Existing user read/RLS and own-photo read remain unchanged.
+
+**Go-live database order:** 0001 → 0002 → 0003 → 0004 → 0005 → 0006. Verify the actual Supabase RLS policies before accepting uploads. The CI tests mock Supabase; they are not a substitute for a live DB integration test.

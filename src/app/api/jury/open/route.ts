@@ -81,14 +81,19 @@ export async function POST(req: NextRequest) {
       { status: 402 }
     );
 
+  // Solo service_role può modificare requests; il client è di sola lettura.
+  // Conserviamo il filtro user_id in ogni update come protezione aggiuntiva.
+  const admin = createAdminClient();
+
   // Claim condizionale dello stato PRIMA della spend (P2): due POST concorrenti
   // — il secondo matcha 0 righe (status già jury_open) → 409, mai 200 doppio né
   // doppia spesa di 5 crediti. Lo flip è atomico: update con select per contare
   // le righe (nessuna RPC necessaria, RLS update-own protegge).
-  const claim = await supabase
+  const claim = await admin
     .from("requests")
     .update({ status: "jury_open", jury_deadline_at: deadline, votes_target: 5 })
     .eq("id", request.id)
+    .eq("user_id", userId)
     .eq("status", "ai_done") // guardia: mai riaprire una request già in altro stato
     .select("id");
   if (claim.error) {
@@ -106,17 +111,17 @@ export async function POST(req: NextRequest) {
   // Su errore dopo il claim, la request torna ai_done: il prossimo POST riprova
   // da capo (nessuna giurì aperta a metà).
   const revertClaim = async () => {
-    await supabase
+    await admin
       .from("requests")
       .update({ status: "ai_done" })
       .eq("id", request.id)
+      .eq("user_id", userId)
       .eq("status", "jury_open");
   };
 
   if (user.jury_credit >= JURY_COST) {
     // Scala 5 crediti con RPC atomica: il WHERE jury_credit >= p_cost evita
     // il credito negativo anche sotto concorrenza (nessun read-then-write).
-    const admin = createAdminClient();
     const { data: spent, error: spendErr } = await admin.rpc("spend_jury_credit", {
       p_user_id: userId,
       p_cost: JURY_COST,

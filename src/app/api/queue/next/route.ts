@@ -1,6 +1,6 @@
 import { requireLiveInteractions } from "@/lib/launch-control";
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { MAX_PER_SESSION, rankCandidates } from "@/lib/queue-rank";
 
 export const dynamic = "force-dynamic";
@@ -116,9 +116,15 @@ export async function GET() {
     .single();
 
   // Firma URL foto a breve scadenza (1 min): alla cieca, niente metadati utente.
-  const { data: signed } = await supabase.storage
+  // Il giurato non è proprietario del file: la sua chiave autenticata non ha
+  // diritto SELECT sul bucket privato. Firma soltanto lato server, dopo i
+  // controlli su request aperta e user/juror.
+  const { data: signed, error: signError } = await createAdminClient().storage
     .from("outfits")
     .createSignedUrl(card.photo_path, 60);
+  if (signError || !signed?.signedUrl) {
+    return NextResponse.json({ error: "Foto temporaneamente non disponibile." }, { status: 502 });
+  }
 
   // Incrementa il contatore di sessione SOLO se la card servita è diversa dalla
   // precedente: ricontrollare/refreshare la stessa card non consuma sessione.

@@ -1,7 +1,7 @@
 import { requireLiveInteractions } from "@/lib/launch-control";
 import { requireTrustedMutation } from "@/lib/request-security";
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { getAiVerdict } from "@/lib/anthropic";
 import { AiVerdict, VerdictRequest } from "@/lib/contracts";
 import sharp from "sharp";
@@ -94,17 +94,21 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Per impedire upload diretti via chiave anonima, solo il server può
+  // scrivere nel bucket privato e nella tabella requests.
+  const admin = createAdminClient();
+
   // Salva la foto in bucket privato: {user_id}/{request_id}.jpg
   const requestId = crypto.randomUUID();
   const photoPath = `${userId}/${requestId}.jpg`;
-  const { error: upErr } = await supabase.storage
+  const { error: upErr } = await admin.storage
     .from("outfits")
     .upload(photoPath, photoBuffer, { contentType: "image/jpeg", upsert: false });
   if (upErr) {
     return NextResponse.json({ error: "Foto non salvata. Riprova." }, { status: 500 });
   }
 
-  const { data: request, error: reqErr } = await supabase
+  const { data: request, error: reqErr } = await admin
     .from("requests")
     .insert({
       id: requestId,
@@ -119,7 +123,7 @@ export async function POST(req: NextRequest) {
 
   if (reqErr) {
     // Never leak orphaned photos if the database insert fails.
-    const { error: cleanupError } = await supabase.storage.from("outfits").remove([photoPath]);
+    const { error: cleanupError } = await admin.storage.from("outfits").remove([photoPath]);
     if (cleanupError) console.error("[verdict] orphan-photo cleanup failed", { requestId });
     return NextResponse.json({ error: "Richiesta non salvata. Riprova." }, { status: 500 });
   }

@@ -19,6 +19,7 @@ vi.mock("@/lib/supabase/server", () => ({ createClient: vi.fn(), createAdminClie
 
 const REQUEST_ID = "3f2504e0-4f89-11d3-9a0c-0305e82c3301";
 const USER_ID = "11111111-2222-4333-8444-555555555555";
+let serverOnlyUpdate: ReturnType<typeof vi.fn> | null = null;
 
 /**
  * Mock del client utente (createClient): auth.getUser, users.single,
@@ -82,7 +83,8 @@ function makeUserClient(opts?: {
       return Promise.resolve(onOk?.({ error: null }));
     },
   };
-  const update = vi.fn(() => ({ eq: () => ({ eq: () => updateChain }) }));
+  const update = vi.fn(() => ({ eq: () => ({ eq: () => ({ eq: () => updateChain }) }) }));
+  serverOnlyUpdate = update;
 
   const from = vi.fn((table: string) =>
     table === "users" ? { select: usersSelect } : { select: findSelect, update }
@@ -102,9 +104,9 @@ function makeAdmin(opts?: { spendErr?: boolean; spent?: boolean }) {
     data: opts?.spendErr ? null : (opts?.spent ?? true),
     error: opts?.spendErr ? { message: "RPC giù" } : null,
   }));
-  const admin = { rpc };
+  const admin = { rpc, from: vi.fn(() => ({ update: serverOnlyUpdate })) };
   vi.mocked(createAdminClient).mockReturnValue(admin as unknown as ReturnType<typeof createAdminClient>);
-  return { rpc };
+  return { rpc, from: admin.from };
 }
 
 function post(body: unknown) {
