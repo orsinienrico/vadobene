@@ -10,7 +10,7 @@ export const maxDuration = 30;
 
 /**
  * POST /api/vote — { requestId, verdict, note? } → moderazione, salva il voto,
- * incrementa jury_credit e juror_score via RPC atomiche, restituisce { credit }.
+ * accredita il voto e il credito con una sola transazione DB, restituisce { credit }.
  */
 export async function POST(req: NextRequest) {
   const unavailable = requireLiveInteractions();
@@ -38,12 +38,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Serve un account per votare." }, { status: 401 });
   }
 
-  // Utente OTP-only senza riga users: upsert via service role (ON CONFLICT DO
-  // NOTHING) prima dell'insert — votes.juror_id ha FK su users, senza riga il
-  // voto fallirebbe e il credito andrebbe perso. Self-vote resta bloccato
-  // applicativamente e ora anche dal trigger DB votes_no_self_vote.
+  // La RPC gestisce la creazione del profilo, l'inserimento del voto,
+  // il controllo di deadline/stato e il credito in UN'UNICA transazione.
   const admin = createAdminClient();
-  await admin.from("users").upsert({ id: userId }, { onConflict: "id", ignoreDuplicates: true });
 
   // La request deve essere in jury_open e non propria.
   const { data: request, error: rErr } = await supabase
@@ -74,39 +71,35 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // INSERT con unique(request_id, juror_id): un secondo voto fallisce qui.
-  const { error: vErr } = await supabase.from("votes").insert({
-    request_id: requestId,
-    juror_id: userId,
-    verdict,
-    note: noteStatus === "ok" ? note : null,
-    note_status: noteStatus,
+  // L'RPC blocca la riga requests FOR UPDATE, quindi la chiusura
+  // concorrente del giurì non può contabilizzare voti dopo la deadline.
+  // Nessun credito senza voto e nessun voto senza credito (rollback).
+  const { data: credit, error: voteErr } = await admin.rpc("record_jury_vote", {
+    p_request_id: requestId,
+    p_juror_id: userId,
+    p_verdict: verdict,
+    p_note: noteStatus === "ok" ? note ?? null : null,
+    p_note_status: noteStatus,
   });
 
-  if (vErr) {
-    if (vErr.code === "23505") {
+  if (voteErr) {
+    if (voteErr.code === "23505") {
       return NextResponse.json({ error: "Hai già votato questa richiesta." }, { status: 409 });
     }
+    if (voteErr.code === "42501") {
+      return NextResponse.json({ error: "Non puoi votare la tua richiesta." }, { status: 403 });
+    }
+    if (voteErr.code === "P0002") {
+      return NextResponse.json({ error: "Richiesta non trovata." }, { status: 404 });
+    }
+    if (voteErr.code === "P0001") {
+      return NextResponse.json({ error: "Il giurì non accetta più voti." }, { status: 409 });
+    }
+    console.error("[vote] transazione non riuscita", { requestId, code: voteErr.code });
     return NextResponse.json({ error: "Voto non registrato. Riprova." }, { status: 500 });
   }
-
-  // Credito e punteggio via RPC atomiche (§6.4: jury_credit += 1, juror_score += 1).
-  // Sostituisce il read-then-write precedente (race: credito perso o doppio).
-  const { error: awardErr } = await admin.rpc("award_jury_credit", {
-    p_user_id: userId,
-    p_amount: 1,
-  });
-  const { error: scoreErr } = await admin.rpc("bump_juror_score", { p_user_id: userId });
-
-  // Il voto è già registrato: un errore dell'award non deve far fallire la risposta.
-  const { data: freshUser } = await admin
-    .from("users")
-    .select("jury_credit")
-    .eq("id", userId)
-    .single();
-  if (awardErr || scoreErr || !freshUser) {
-    console.error("[vote] reward non accreditato", { userId, requestId, awardErr, scoreErr });
+  if (typeof credit !== "number") {
+    return NextResponse.json({ error: "Voto non confermato." }, { status: 500 });
   }
-
-  return NextResponse.json({ credit: freshUser?.jury_credit ?? 0, noteStatus });
+  return NextResponse.json({ credit, noteStatus });
 }

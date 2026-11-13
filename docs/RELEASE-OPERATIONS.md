@@ -90,3 +90,7 @@ The CI-compatible font loader currently requests the exact brand fonts via Googl
 - Database migrations and end-to-end private photo deletion cannot be verified until an authorized Supabase connection exists. Do **not** enable launches simply because the CI is green.
 - Privacy copy must not promise deletion *before* 24h when the actual cron deletes only after the 24h cutoff; the operational retention guarantee and final GDPR notice require review before public launch.
 - GitHub `master` still requires repository ruleset/branch protection and mandatory status checks; current GitHub tools cannot directly configure that setting.
+
+## 2026-11-13 — vote schema + atomic awards
+
+Migration `0005_vote_atomic_and_ai_unique.sql` repairs a defect in 0003: `UNIQUE NULLS NOT DISTINCT` prevented more than one AI vote per request. It replaces that with a partial unique index on non-null `juror_id`. It also revokes direct authenticated INSERT on `votes` and adds `record_jury_vote` (service_role only). This single Postgres transaction verifies the deadline, owner, cap of 5, uniqueness and inserts a vote while awarding exactly one credit and juror point. Run migration 0005 before the new API route is deployed to any active environment. Existing closed/incomplete jury data is not modified. DB-level integration tests must be performed after Supabase connection.
