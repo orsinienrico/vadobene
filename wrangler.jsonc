@@ -25,7 +25,9 @@
     "VB_IMAGE_PROCESSOR": "cloudflare",
     "LAUNCH_ENABLED": "false",
     "SCHEDULER_ENABLED": "false",
-    "SCHEDULER_CONFIRMED": "false"
+    "SCHEDULER_CONFIRMED": "false",
+    "BETA_ENABLED": "false",
+    "BETA_READY_CONFIRMED": "false"
   },
   "observability": {
     "enabled": true
@@ -39,7 +41,9 @@
       "LAUNCH_ENABLED": "false",
       "SCHEDULER_ENABLED": "false",
       "SCHEDULER_CONFIRMED": "false",
-      "VB_PREVIEW_LOCKED": "true"
+      "VB_PREVIEW_LOCKED": "true",
+      "BETA_ENABLED": "false",
+      "BETA_READY_CONFIRMED": "false"
     },
     "images": {
       "binding": "IMAGES"
