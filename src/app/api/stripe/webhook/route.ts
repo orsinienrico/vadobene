@@ -38,6 +38,11 @@ export async function POST(req: NextRequest) {
 
   if (event.type === "checkout.session.completed") {
     const session = event.data.object;
+    // Checkout may complete before an asynchronous payment has settled.
+    // Never grant paid credits or subscriptions while payment is pending.
+    if (session.payment_status !== "paid") {
+      return NextResponse.json({ received: true, paymentPending: true });
+    }
     userId = session.metadata?.userId ?? session.client_reference_id ?? undefined;
     if (session.metadata?.product === "boost") action = "boost";
     if (session.metadata?.product === "pro_monthly" || session.metadata?.product === "pro_yearly") {
