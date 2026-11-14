@@ -9,10 +9,14 @@ vi.mock("@/lib/moderation", () => ({ moderateNote: vi.fn() }));
 
 const REQUEST_ID = "3f2504e0-4f89-11d3-9a0c-0305e82c3301";
 
+let currentRequestRow: { id: string; status: string; user_id: string; jury_deadline_at: string | null };
+
 function makeClient(opts?: {
   requestRow?: { id: string; status: string; user_id: string; jury_deadline_at: string | null };
   unauthenticated?: boolean;
 }) {
+  currentRequestRow = opts?.requestRow ??
+    { id: REQUEST_ID, status: "jury_open", user_id: "owner-1", jury_deadline_at: null };
   const single = vi.fn(async () => ({
     data: opts?.requestRow ??
       { id: REQUEST_ID, status: "jury_open", user_id: "owner-1", jury_deadline_at: null },
@@ -35,7 +39,14 @@ function makeAdmin(opts?: { rpcError?: { code: string }; credit?: number }) {
     data: opts?.rpcError ? null : (opts?.credit ?? 1),
     error: opts?.rpcError ?? null,
   }));
-  const admin = { rpc };
+  const from = vi.fn(() => ({
+    select: vi.fn(() => ({
+      eq: vi.fn(() => ({
+        single: vi.fn(async () => ({ data: currentRequestRow, error: null })),
+      })),
+    })),
+  }));
+  const admin = { rpc, from };
   vi.mocked(createAdminClient).mockReturnValue(admin as unknown as ReturnType<typeof createAdminClient>);
   return { rpc, admin };
 }
