@@ -23,18 +23,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Serve un account." }, { status: 401 });
   }
 
-  // Trova il customer Stripe: lo cerchiamo per email (semplificazione MVP).
-  const { data: user } = await supabase
-    .from("users")
-    .select("email")
-    .eq("id", userId)
-    .single();
-  if (!user?.email) {
-    return NextResponse.json({ error: "Nessun abbonamento." }, { status: 404 });
-  }
-
-  const customers = await stripe().customers.list({ email: user.email, limit: 1 });
-  const customer = customers.data[0];
+  // Never authorize a Billing Portal session by email matching:
+  // email is not a stable identity and could expose another customer's billing.
+  const customers = await stripe().customers.search({
+    query: `metadata['userId']:'${userId}'`,
+    limit: 1,
+  });
+  const customer = customers.data.find((c) => !c.deleted && c.metadata?.userId === userId);
   if (!customer) {
     return NextResponse.json({ error: "Nessun abbonamento." }, { status: 404 });
   }
