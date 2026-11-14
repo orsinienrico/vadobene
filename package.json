@@ -15,7 +15,11 @@
     "e2e": "playwright test",
     "e2e:mock": "playwright test --grep-invert=@real",
     "e2e:smoke": "playwright test --grep=@real",
-    "db:migrate": "psql \"$SUPABASE_DB_URL\" -f supabase/migrations/0001_init.sql"
+    "db:migrate": "psql \"$SUPABASE_DB_URL\" -f supabase/migrations/0001_init.sql",
+    "cf:build": "opennextjs-cloudflare build",
+    "cf:preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "cf:deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "cf:typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.57.0",
@@ -27,7 +31,8 @@
     "react-dom": "^19.1.0",
     "sharp": "^0.35.5",
     "stripe": "^17.7.0",
-    "zod": "^4.6.6"
+    "zod": "^4.6.6",
+    "@opennextjs/cloudflare": "1.20.17"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.7",
@@ -41,7 +46,8 @@
     "eslint-config-next": "15.5.29",
     "tailwindcss": "^4.3.3",
     "typescript": "^5.8.3",
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.4",
+    "wrangler": "4.160.1"
   },
   "pnpm": {
     "overrides": {
