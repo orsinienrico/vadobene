@@ -6,6 +6,21 @@
 
 const FROM = process.env.RESEND_FROM ?? "vado bene? <ciao@vadobene.app>";
 
+function escapeHtml(value: string): string {
+  return value.replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;",
+    '"': "&quot;", "'": "&#39;",
+  })[char]!);
+}
+
+function safeLink(value: string): string {
+  const url = new URL(value);
+  if (url.protocol !== "https:" && !(process.env.NODE_ENV === "development" && url.origin === "http://localhost:3000")) {
+    throw new Error("Email link must be HTTPS");
+  }
+  return escapeHtml(url.toString());
+}
+
 type ResendPayload = { from: string; to: string; subject: string; html: string };
 
 export async function sendEmail(to: string, subject: string, html: string): Promise<boolean> {
@@ -35,7 +50,7 @@ export function magicLinkEmail(link: string): { subject: string; html: string } 
   <p style="font-size:34px;font-weight:800;letter-spacing:-0.045em;margin:0 0 8px">vado bene?</p>
   <p style="font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:#8FA6AE;margin:0 0 32px">LO SPECCHIO CHE NON MENTE</p>
   <p style="font-size:16px;line-height:1.6;margin:0 0 28px">Tocca per entrare. Nessuna password, nessun profilo da riempire.</p>
-  <a href="${link}" style="display:inline-block;background:#F2E9D8;color:#0E2A36;font-size:15px;font-weight:600;padding:14px 34px;border-radius:999px;text-decoration:none">Entra</a>
+  <a href="${safeLink(link)}" style="display:inline-block;background:#F2E9D8;color:#0E2A36;font-size:15px;font-weight:600;padding:14px 34px;border-radius:999px;text-decoration:none">Entra</a>
   <p style="font-size:12px;color:#8FA6AE;margin-top:28px">Se non hai chiesto tu questo link, ignora la mail.</p>
 </div>`,
   };
@@ -51,8 +66,8 @@ export function juryClosedEmail(opts: {
 <div style="font-family:Helvetica,Arial,sans-serif;background:#0E2A36;color:#F2E9D8;padding:40px 24px;text-align:center">
   <p style="font-size:34px;font-weight:800;letter-spacing:-0.045em;margin:0 0 8px">vado bene?</p>
   <p style="font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:#8FA6AE;margin:0 0 32px">IL GIURÌ HA DETTO</p>
-  <p style="font-size:28px;font-weight:600;margin:0 0 24px">${opts.headline}</p>
-  <a href="${opts.cardUrl}" style="display:inline-block;background:#F2E9D8;color:#0E2A36;font-size:15px;font-weight:600;padding:14px 34px;border-radius:999px;text-decoration:none">Vedi la card</a>
+  <p style="font-size:28px;font-weight:600;margin:0 0 24px">${escapeHtml(opts.headline)}</p>
+  <a href="${safeLink(opts.cardUrl)}" style="display:inline-block;background:#F2E9D8;color:#0E2A36;font-size:15px;font-weight:600;padding:14px 34px;border-radius:999px;text-decoration:none">Vedi la card</a>
   <p style="font-size:12px;color:#8FA6AE;margin-top:28px">Cinque persone vere, alla cieca. vadobene.app</p>
 </div>`,
   };
