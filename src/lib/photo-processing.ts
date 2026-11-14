@@ -9,11 +9,11 @@ const MAX_STORED_BYTES = 6 * 1024 * 1024;
 const MAX_PIXELS = 20_000_000;
 const MAX_SIDE = 1280;
 
-type TransformResult = { response(): Promise<Response> };
+type TransformResult = { response(): Response };
 type ImageChain = {
   transform(options: {
     width: number; height: number; fit: "scale-down"; metadata: "none";
-  }): { output(options: { format: "image/jpeg"; quality: number; anim: false }): TransformResult };
+  }): { output(options: { format: "image/jpeg"; quality: number; anim: false }): Promise<TransformResult> };
 };
 type CloudflareImages = {
   info(stream: ReadableStream<Uint8Array>): Promise<{ width: number; height: number }>;
@@ -125,9 +125,12 @@ async function withCloudflareImages(raw: Buffer): Promise<Buffer> {
       metadata.width * metadata.height > MAX_PIXELS) {
     throw new Error("Invalid source dimensions");
   }
-  const result = await images.input(imageStream(new Uint8Array(raw)))
+  // The Images binding .output() returns a Promise of the output handle.
+  // Calling .response() before awaiting .output() fails at runtime.
+  const output = await images.input(imageStream(new Uint8Array(raw)))
     .transform({ width: MAX_SIDE, height: MAX_SIDE, fit: "scale-down", metadata: "none" })
-    .output({ format: "image/jpeg", quality: 82, anim: false }).response();
+    .output({ format: "image/jpeg", quality: 82, anim: false });
+  const result = output.response();
   if (!result.ok || !result.headers.get("content-type")?.startsWith("image/jpeg")) {
     throw new Error("Image transform failed");
   }
