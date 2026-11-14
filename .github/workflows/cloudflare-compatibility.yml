@@ -106,7 +106,13 @@ jobs:
             tail -n 80 /tmp/vadobene-preview-lock.log
             exit 1
           fi
-          for path in /api/cron/close-juries /api/stripe/checkout /api/verdict /c/00000000-0000-0000-0000-000000000000; do
+          login_status=$(curl -sS -o /tmp/vadobene-preview-login -w '%{http_code}' \
+            http://127.0.0.1:8788/login)
+          if [ "$login_status" != "200" ]; then
+            echo "Read-only login preview must return 200 (got $login_status)"
+            exit 1
+          fi
+          for path in /api/cron/close-juries /api/stripe/checkout /api/verdict /api/beta/request-code /c/00000000-0000-0000-0000-000000000000; do
             status=$(curl -sS -o /tmp/vadobene-locked-response -w '%{http_code}' \
               "http://127.0.0.1:8788$path")
             if [ "$status" != "403" ]; then
@@ -121,7 +127,14 @@ jobs:
             echo "Preview must reject POST /api/verdict (got HTTP $post_status)"
             exit 1
           fi
-          echo "Cloudflare preview allows public landing; denies private routes, writes and payments."
+          otp_status=$(curl -sS -o /tmp/vadobene-locked-otp -w '%{http_code}' \
+            -X POST -H 'Content-Type: application/json' -d '{"email":"tester@example.com"}' \
+            http://127.0.0.1:8788/api/beta/request-code)
+          if [ "$otp_status" != "403" ]; then
+            echo "Preview must reject OTP requests (got HTTP $otp_status)"
+            exit 1
+          fi
+          echo "Cloudflare preview allows read-only landing and login; denies private routes, OTP, writes and payments."
         env:
           NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
