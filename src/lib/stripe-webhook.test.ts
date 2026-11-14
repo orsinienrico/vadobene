@@ -33,6 +33,7 @@ function boostEvent(id = "evt_boost_1"): Stripe.Event {
       object: {
         id: "cs_test_1",
         object: "checkout.session",
+        payment_status: "paid",
         metadata: { userId: "user-1", product: "boost" },
       },
     },
@@ -134,7 +135,7 @@ describe("POST /api/stripe/webhook", () => {
     const { rpc } = makeAdmin();
     const event = {
       ...boostEvent("evt_plan"),
-      data: { object: { id: "cs_pro", object: "checkout.session", metadata: { userId: "user-1", product: "pro_monthly" } } },
+      data: { object: { id: "cs_pro", object: "checkout.session", payment_status: "paid", metadata: { userId: "user-1", product: "pro_monthly" } } },
     } as unknown as Stripe.Event;
     const res = await postEvent(event, signPayload(JSON.stringify(event)));
     expect(res.status).toBe(200);
@@ -143,6 +144,16 @@ describe("POST /api/stripe/webhook", () => {
       p_user_id: "user-1",
       p_action: "pro",
     });
+  });
+
+  it("pagamento in sospeso: nessun credito e nessun piano attivato", async () => {
+    const { rpc } = makeAdmin();
+    const event = boostEvent("evt_pending");
+    (event.data.object as Stripe.Checkout.Session).payment_status = "unpaid";
+    const res = await postEvent(event, signPayload(JSON.stringify(event)));
+    expect(res.status).toBe(200);
+    await expect(res.json()).resolves.toEqual({ received: true, paymentPending: true });
+    expect(rpc).not.toHaveBeenCalled();
   });
 
   it("firma invalida: 400 e nessuna scrittura", async () => {
