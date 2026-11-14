@@ -103,7 +103,7 @@ export default function LoginPage() {
           </Link>
           <button type="button" onClick={signOut} disabled={busy}
             className="rounded-xl border border-line px-5 py-3 text-sm text-gold disabled:opacity-50">
-            Esci dall'account
+            Esci dall&apos;account
           </button>
         </div>
       ) : (
