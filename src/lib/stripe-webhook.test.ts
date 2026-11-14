@@ -156,6 +156,20 @@ describe("POST /api/stripe/webhook", () => {
     expect(rpc).not.toHaveBeenCalled();
   });
 
+  it("pagamento asincrono confermato: accredita solo dopo la conferma", async () => {
+    const { rpc } = makeAdmin();
+    const event = boostEvent("evt_async_paid");
+    event.type = "checkout.session.async_payment_succeeded";
+    const res = await postEvent(event, signPayload(JSON.stringify(event)));
+    expect(res.status).toBe(200);
+    await expect(res.json()).resolves.toEqual({ received: true });
+    expect(rpc).toHaveBeenCalledExactlyOnceWith("process_stripe_event", {
+      p_event_id: "evt_async_paid",
+      p_user_id: "user-1",
+      p_action: "boost",
+    });
+  });
+
   it("firma invalida: 400 e nessuna scrittura", async () => {
     const { rpc } = makeAdmin();
     const event = boostEvent("evt_bad_sig");
