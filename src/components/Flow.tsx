@@ -207,6 +207,14 @@ function LiveFlow() {
         });
         return;
       }
+      if (res.status === 429) {
+        dispatch({ type: "submitFailed", message: "Hai esaurito i 3 pareri AI disponibili oggi nella beta." });
+        return;
+      }
+      if (res.status === 401 || res.status === 403) {
+        dispatch({ type: "submitFailed", message: "Per usare la beta devi accedere con un indirizzo invitato." });
+        return;
+      }
       if (!res.ok) throw new Error(String(res.status));
       const d = await res.json();
       void track("verdict_ai", {
