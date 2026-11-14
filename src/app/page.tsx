@@ -4,6 +4,9 @@ import { Hero } from "@/components/Hero";
 import { Flow } from "@/components/Flow";
 import { liveInteractionsEnabled } from "@/lib/launch-control";
 
+// Evaluate launch flags at request time, not during the Cloudflare build.
+export const dynamic = "force-dynamic";
+
 export default function Home() {
   // Local development and Playwright mocks remain usable without external keys.
   // Vercel environments must pass the release gate before collecting photos.
