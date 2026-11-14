@@ -1,3 +1,4 @@
+import { requireBetaInvite } from "@/lib/beta-access";
 import { requireLiveInteractions } from "@/lib/launch-control";
 import { requireTrustedMutation } from "@/lib/request-security";
 import { NextRequest, NextResponse } from "next/server";
@@ -23,6 +24,8 @@ const JURY_COST = 5;
 export async function POST(req: NextRequest) {
   const unavailable = requireLiveInteractions();
   if (unavailable) return unavailable;
+  const denied = await requireBetaInvite();
+  if (denied) return denied;
   const forbiddenOrigin = requireTrustedMutation(req);
   if (forbiddenOrigin) return forbiddenOrigin;
 
