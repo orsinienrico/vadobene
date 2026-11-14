@@ -7,6 +7,7 @@ vi.mock("@/lib/supabase/server", () => ({ createClient: vi.fn() }));
 
 const variables: Record<string, string> = {
   BETA_ENABLED: "true",
+  BETA_AUTH_ENABLED: "true",
   BETA_READY_CONFIRMED: "true",
   BETA_ALLOWED_EMAILS: "tester@example.com",
   LAUNCH_ENABLED: "false",
@@ -82,9 +83,16 @@ describe("POST /api/beta/request-code", () => {
   });
 
   it("fails closed if beta has not been approved", async () => {
-    process.env.BETA_READY_CONFIRMED = "false";
+    process.env.BETA_AUTH_ENABLED = "false";
     expect((await POST(request("tester@example.com"))).status).toBe(503);
     expect(otp).not.toHaveBeenCalled();
+  });
+
+  it("permits OTP in an auth-only canary without AI or full beta approval", async () => {
+    process.env.BETA_READY_CONFIRMED = "false";
+    delete process.env.ANTHROPIC_API_KEY;
+    expect((await POST(request("tester@example.com"))).status).toBe(200);
+    expect(otp).toHaveBeenCalledTimes(1);
   });
 
   it("does not reveal auth provider errors or address membership", async () => {

@@ -7,10 +7,20 @@ import { releaseReadiness } from "@/lib/release-readiness";
  * but it DOES require an independently verified scheduler, image processing,
  * auth SMTP, moderation and private photo retention before accepting photos.
  */
+// Separate OTP canary: verify real authentication before enabling photos or payments.
+// Explicitly off in developer previews. Full beta readiness requires this gate too.
+export function betaAuthEnabled(
+  env: Readonly<Record<string, string | undefined>> = process.env
+): boolean {
+  if (!betaModeRequested(env) || env.BETA_AUTH_ENABLED !== "true" || env.VB_PREVIEW_LOCKED === "true") return false;
+  return Boolean(env.NEXT_PUBLIC_SUPABASE_URL && env.NEXT_PUBLIC_SUPABASE_ANON_KEY &&
+    env.NEXT_PUBLIC_SITE_URL && env.BETA_ALLOWED_EMAILS?.trim());
+}
+
 export function betaInteractionsEnabled(
   env: Readonly<Record<string, string | undefined>> = process.env
 ): boolean {
-  if (!betaModeRequested(env) || env.BETA_READY_CONFIRMED !== "true") return false;
+  if (!betaAuthEnabled(env) || env.BETA_READY_CONFIRMED !== "true") return false;
   const { services } = releaseReadiness(env);
   return services.database && services.ai && services.scheduler &&
     services.email && services.siteUrl &&

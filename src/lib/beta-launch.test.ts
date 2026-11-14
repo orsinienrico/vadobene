@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { betaInteractionsEnabled, commercialInteractionsEnabled, liveInteractionsEnabled } from "./launch-control";
+import { betaAuthEnabled, betaInteractionsEnabled, commercialInteractionsEnabled, liveInteractionsEnabled } from "./launch-control";
 
 const validBeta = {
   NODE_ENV: "production",
   VERCEL_ENV: "production",
   BETA_ENABLED: "true",
+  BETA_AUTH_ENABLED: "true",
   BETA_READY_CONFIRMED: "true",
   BETA_ALLOWED_EMAILS: "first@example.com",
   LAUNCH_ENABLED: "false",
@@ -20,6 +21,18 @@ const validBeta = {
 };
 
 describe("invite-only free beta launch gates", () => {
+  it("can test OTP without opening uploads or payments", () => {
+    const canary = { ...validBeta, BETA_READY_CONFIRMED: "false", ANTHROPIC_API_KEY: "", CRON_SECRET: "" };
+    expect(betaAuthEnabled(canary)).toBe(true);
+    expect(betaInteractionsEnabled(canary)).toBe(false);
+    expect(liveInteractionsEnabled(canary)).toBe(false);
+    expect(commercialInteractionsEnabled(canary)).toBe(false);
+  });
+  it("requires an explicit auth switch and remains closed in locked previews", () => {
+    expect(betaAuthEnabled({ ...validBeta, BETA_AUTH_ENABLED: "false" })).toBe(false);
+    expect(betaAuthEnabled({ ...validBeta, VB_PREVIEW_LOCKED: "true" })).toBe(false);
+    expect(betaInteractionsEnabled({ ...validBeta, BETA_AUTH_ENABLED: "false" })).toBe(false);
+  });
   it("can enable invited beta before Stripe is configured", () => {
     expect(betaInteractionsEnabled(validBeta)).toBe(true);
     expect(liveInteractionsEnabled(validBeta)).toBe(true);

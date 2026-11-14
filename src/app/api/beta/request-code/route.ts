@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { isBetaEmailInvited } from "@/lib/beta-access";
-import { betaInteractionsEnabled } from "@/lib/launch-control";
+import { betaAuthEnabled } from "@/lib/launch-control";
 import { requireTrustedMutation } from "@/lib/request-security";
 import { createClient } from "@/lib/supabase/server";
 
@@ -21,7 +21,7 @@ const noStore = { "Cache-Control": "no-store" };
  * are separate operational requirements, not substitutes for this check.
  */
 export async function POST(req: NextRequest) {
-  if (!betaInteractionsEnabled(process.env)) {
+  if (!betaAuthEnabled(process.env)) {
     return NextResponse.json(
       { error: "La beta non è ancora attiva." },
       { status: 503, headers: noStore }

@@ -27,7 +27,8 @@
     "SCHEDULER_ENABLED": "false",
     "SCHEDULER_CONFIRMED": "false",
     "BETA_ENABLED": "false",
-    "BETA_READY_CONFIRMED": "false"
+    "BETA_READY_CONFIRMED": "false",
+    "BETA_AUTH_ENABLED": "false"
   },
   "observability": {
     "enabled": true
@@ -43,7 +44,8 @@
       "SCHEDULER_CONFIRMED": "false",
       "VB_PREVIEW_LOCKED": "true",
       "BETA_ENABLED": "false",
-      "BETA_READY_CONFIRMED": "false"
+      "BETA_READY_CONFIRMED": "false",
+      "BETA_AUTH_ENABLED": "false"
     },
     "images": {
       "binding": "IMAGES"

@@ -1,5 +1,5 @@
 import { BetaLoginForm } from "@/components/BetaLoginForm";
-import { betaInteractionsEnabled } from "@/lib/launch-control";
+import { betaAuthEnabled } from "@/lib/launch-control";
 
 export const dynamic = "force-dynamic";
 
@@ -8,5 +8,5 @@ export const dynamic = "force-dynamic";
  * even if the user guesses /login directly on a protected Preview URL.
  */
 export default function LoginPage() {
-  return <BetaLoginForm enabled={betaInteractionsEnabled(process.env)} />;
+  return <BetaLoginForm enabled={betaAuthEnabled(process.env)} />;
 }
