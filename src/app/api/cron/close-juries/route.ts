@@ -9,7 +9,7 @@ export const runtime = "nodejs";
 export const maxDuration = 120;
 
 /**
- * Cron ogni 30s — Fase 3. Protetta da CRON_SECRET (solo header Bearer, fail-closed).
+ * Cron ogni minuto — Fase 3. Protetta da CRON_SECRET (solo header Bearer, fail-closed).
  * Chiude le jury_open con votes_target voti umani (chiusura anticipata, §6.3)
  * o deadline scaduta; riempi i voti mancanti con AI (is_ai=true, note moderate
  * fail-closed); calcola JurySummary e salva in jury_summary.
@@ -35,7 +35,11 @@ export async function GET(req: NextRequest) {
   const { data: allOpen, error } = await supabase
     .from("requests")
     .select("id, occasion_id, custom_occasion, jury_deadline_at, votes_target, user_id")
-    .eq("status", "jury_open");
+    .eq("status", "jury_open")
+    // Bound the AI workload so one cron invocation cannot block for the entire
+    // backlog; oldest jury deadlines get first priority.
+    .order("jury_deadline_at", { ascending: true })
+    .limit(20);
 
   if (error) return NextResponse.json({ error: "Cron non riuscito. Riprova." }, { status: 500 });
   if (!allOpen || allOpen.length === 0) {
