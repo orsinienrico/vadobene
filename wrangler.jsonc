@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "vadobene-app",
+  "name": "vadobene",
   "main": "custom-worker.ts",
   "compatibility_date": "2026-11-14",
   "compatibility_flags": [
