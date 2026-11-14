@@ -59,7 +59,10 @@ export async function GET() {
     );
   }
 
-  const admin = createAdminClient();\n\n  // Authorized server-side query: no open-jury request metadata in the client Data API.\n  // Richieste in jury_open, escluse le proprie, deadline più vicina prima.
+  const admin = createAdminClient();
+
+  // Authorized server-side query: no open-jury request metadata in the client Data API.
+  // Richieste in jury_open, escluse le proprie, deadline più vicina prima.
   const { data: candidates, error } = await admin
     .from("requests")
     .select("id, occasion_id, custom_occasion, jury_deadline_at, votes_target, photo_path")
