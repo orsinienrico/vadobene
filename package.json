@@ -25,9 +25,9 @@
     "posthog-js": "^1.434.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "sharp": "^0.35.4",
+    "sharp": "^0.35.5",
     "stripe": "^17.7.0",
-    "zod": "^3.25.67"
+    "zod": "^4.6.6"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.7",
@@ -42,5 +42,12 @@
     "tailwindcss": "^4.3.3",
     "typescript": "^5.8.3",
     "vitest": "^3.2.4"
+  },
+  "pnpm": {
+    "overrides": {
+      "dompurify": "^3.4.17",
+      "postcss": "^8.5.18",
+      "source-map-js": "^1.2.2"
+    }
   }
 }
