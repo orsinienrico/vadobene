@@ -22,7 +22,26 @@ describe("Cloudflare JPEG privacy stripping", () => {
       segment(0xdb, [0x00, 0x02]), // JPEG quantization
     ]);
     const sanitized = stripJpegMetadata(file);
-    expect([...sanitized]).toEqual([...jpeg([segment(0xe0, [0x4a, 0x46]),segment(0xdb, [0x00, 0x02])])]);
+    expect([...sanitized]).toEqual([...jpeg([segment(0xdb, [0x00, 0x02])])]);
+  });
+  it("removes metadata between progressive scans and preserves byte-stuffed JPEG data", () => {
+    const content = new Uint8Array([
+      0xff, 0xd8,
+      ...segment(0xdb, [0x00, 0x02]),
+      ...segment(0xda, []), 0x12, 0xff, 0x00, 0x34, 0xff, 0xd0, 0x56,
+      ...segment(0xe1, [0x47, 0x50, 0x53]),
+      ...segment(0xc4, [0x00, 0x02]),
+      ...segment(0xda, []), 0x78, 0xff, 0xd9,
+      0x54, 0x52, 0x41, 0x49, 0x4c,
+    ]);
+    const expected = new Uint8Array([
+      0xff, 0xd8,
+      ...segment(0xdb, [0x00, 0x02]),
+      ...segment(0xda, []), 0x12, 0xff, 0x00, 0x34, 0xff, 0xd0, 0x56,
+      ...segment(0xc4, [0x00, 0x02]),
+      ...segment(0xda, []), 0x78, 0xff, 0xd9,
+    ]);
+    expect([...stripJpegMetadata(content)]).toEqual([...expected]);
   });
   it("discards trailing bytes appended after JPEG end-of-image", () => {
     const valid = jpeg([segment(0xdb, [0x00, 0x02])]);
