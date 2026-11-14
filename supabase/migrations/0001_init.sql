@@ -73,27 +73,6 @@ create policy "requests update own" on requests
 create policy "requests delete own" on requests
   for delete using (auth.uid() = user_id);
 
--- Il giurato deve leggere la richiesta che sta per votare (foto firmata,
--- occasione). Il proprietario vede le proprie. Scrittura solo via service role.
--- 1. Lettura di richieste in cui ha già votato (visione recap voto).
-create policy "requests select jurors voted" on requests
-  for select using (
-    exists (
-      select 1 from votes v
-      where v.request_id = requests.id and v.juror_id = auth.uid()
-    )
-  );
--- 2. Lettura di richieste aperte (jury_open) senza averle ancora votate
---    (needed for /api/queue/next a mostrare le richieste disponibili).
-create policy "requests select open jury" on requests
-  for select using (
-    status = 'jury_open' and
-    not exists (
-      select 1 from votes v
-      where v.request_id = requests.id and v.juror_id = auth.uid()
-    )
-  );
-
 -- ── votes ──────────────────────────────────────────────────────────────
 create table if not exists votes (
   id uuid primary key default gen_random_uuid(),
@@ -125,6 +104,29 @@ create policy "votes select requester" on votes
       where r.id = votes.request_id and r.user_id = auth.uid()
     ) or auth.uid() = juror_id
   );
+
+-- Policies that refer to votes must be declared AFTER votes exists.
+-- Il giurato deve leggere la richiesta che sta per votare (foto firmata,
+-- occasione). Il proprietario vede le proprie. Scrittura solo via service role.
+-- 1. Lettura di richieste in cui ha già votato (visione recap voto).
+create policy "requests select jurors voted" on requests
+  for select using (
+    exists (
+      select 1 from votes v
+      where v.request_id = requests.id and v.juror_id = auth.uid()
+    )
+  );
+-- 2. Lettura di richieste aperte (jury_open) senza averle ancora votate
+--    (needed for /api/queue/next a mostrare le richieste disponibili).
+create policy "requests select open jury" on requests
+  for select using (
+    status = 'jury_open' and
+    not exists (
+      select 1 from votes v
+      where v.request_id = requests.id and v.juror_id = auth.uid()
+    )
+  );
+
 
 -- ── reports ────────────────────────────────────────────────────────────
 create table if not exists reports (
