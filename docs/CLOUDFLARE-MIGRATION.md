@@ -45,3 +45,24 @@ Cloudflare docs:
 - https://developers.cloudflare.com/images/optimization/binding/
 - https://developers.cloudflare.com/workers/platform/pricing/
 - https://developers.cloudflare.com/workers/configuration/cron-triggers/
+
+
+## Implementation and Cloudflare dashboard linkage
+
+Cloudflare Workers GitHub integration has reported a build check for the Worker **vadobene**.
+The migration branch now contains:
+- `wrangler.jsonc`: Worker name `vadobene`, private by default (`workers_dev=false`), Cloudflare Images binding, guarded cron triggers, and `build.command="pnpm cf:build"` so **default `wrangler deploy` automatically builds the OpenNext bundle**.
+- `custom-worker.ts`: same Next.js fetch handler plus a scheduled handler, which requires `SCHEDULER_ENABLED=true` and `CRON_SECRET` before calling the authenticated app cron routes internally.
+- `src/lib/photo-processing.ts`: rejects oversized/corrupt images, checks dimensions, re-encodes JPEG via Images binding and strips JPEG APP metadata before sending to Anthropic or Supabase. Original Node/Sharp implementation remains as non-Cloudflare fallback.
+- `cloudflare-compatibility.yml`: GitHub CI runs Wrangler dry-run with no credentials. An additional local Workers smoke test checks health and prelaunch denial.
+
+**Cloudflare Dashboard > Workers & Pages > vadobene > Settings > Build:**
+- Root directory: repository root
+- Production branch: `master` (do **not** change to migration branch during validation)
+- Build command: leave blank (or use `pnpm cf:build`, but that duplicates the Wrangler build hook)
+- Deploy command: `npx wrangler deploy` (uses the `build.command` hook)
+- Enable preview builds for pull requests/branches as appropriate. Do not activate production public URL before completing integration tests.
+
+A failed Cloudflare-native build check from an earlier migration commit is **not proof the latest code still fails**. Verify the newest Cloudflare build by its commit and logs in the dashboard. The GitHub no-credentials dry-run verifies packaging but **does not verify an authenticated Cloudflare deployment**, the live Images binding, account plan limits, or real services.
+
+Keep all production secrets in Cloudflare Worker Secrets (never repo/chat), and provide a separate staging Supabase/Stripe environment for live end-to-end tests. `LAUNCH_ENABLED`, `SCHEDULER_ENABLED` and `SCHEDULER_CONFIRMED` must remain false until the release gates pass.
