@@ -49,7 +49,17 @@ export function stripJpegMetadata(source: Uint8Array): Uint8Array {
       if (cursor + 2 > source.length) throw new Error("Invalid JPEG scan");
       const n = (source[cursor] << 8) | source[cursor + 1];
       if (n < 2 || cursor + n > source.length) throw new Error("Invalid JPEG scan");
-      parts.push(source.subarray(start));
+      // JPEG data must terminate at the first real End-of-Image marker.
+      // Never carry arbitrary trailing bytes (possible hidden metadata/payload).
+      let endOfImage = -1;
+      for (let i = cursor + n; i < source.length - 1; i++) {
+        if (source[i] === 0xff && source[i + 1] === 0xd9) {
+          endOfImage = i + 2;
+          break;
+        }
+      }
+      if (endOfImage < 0) throw new Error("JPEG end marker missing");
+      parts.push(source.subarray(start, endOfImage));
       const size = parts.reduce((total, p) => total + p.byteLength, 0);
       const result = new Uint8Array(size);
       let pos = 0;
