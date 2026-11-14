@@ -35,7 +35,8 @@ export default function Home() {
         </h2>
         <p className="mt-[18px] text-[15px] text-muted">
           vado bene? non giudica le persone. Chiede a cinque persone vere, alla cieca, se
-          l&apos;outfit funziona per quell&apos;occasione.
+          l&apos;outfit funziona per quell&apos;occasione. Se mancano voti umani, i voti AI
+          vengono indicati separatamente nel risultato.
         </p>
       </section>
 
