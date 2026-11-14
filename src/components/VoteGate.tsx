@@ -197,7 +197,7 @@ export function VoteGate({
 
   const authBox = inviteOnly ? (
     <div className="mt-4 text-sm">
-      <p className="text-muted">La sessione è scaduta. Accedi di nuovo con l'email invitata.</p>
+      <p className="text-muted">La sessione è scaduta. Accedi di nuovo con l&apos;email invitata.</p>
       <a href="/login" className="mt-3 inline-flex rounded-lg bg-gold px-5 py-2 font-semibold text-ink">
         Accedi alla beta
       </a>
