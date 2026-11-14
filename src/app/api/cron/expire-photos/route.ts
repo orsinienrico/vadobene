@@ -6,7 +6,7 @@ export const runtime = "nodejs";
 export const maxDuration = 120;
 
 /**
- * Cron ogni ora — Fase 4. Protetta da CRON_SECRET.
+ * Cron periodico — Fase 4. Protetta da CRON_SECRET.
  * Cancella dallo Storage le foto delle requests con created_at < now()-24h
  * e keep_photo=false, poi status='expired'.
  */
@@ -29,7 +29,11 @@ export async function GET(req: NextRequest) {
     .lt("created_at", cutoff)
     .eq("keep_photo", false)
     .neq("status", "expired")
-    .not("photo_path", "is", null);
+    .not("photo_path", "is", null)
+    // Always process oldest photos first; bounded work avoids storage API limits
+    // and timeouts under load. Monitor backlogPossible from the scheduler.
+    .order("created_at", { ascending: true })
+    .limit(100);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!expired || expired.length === 0) {
@@ -47,9 +51,9 @@ export async function GET(req: NextRequest) {
   const ids = expired.map((r) => r.id);
   const { error: updErr } = await supabase
     .from("requests")
-    .update({ status: "expired" })
+    .update({ status: "expired", photo_path: null })
     .in("id", ids);
   if (updErr) return NextResponse.json({ error: updErr.message }, { status: 500 });
 
-  return NextResponse.json({ expired: ids.length, ids });
+  return NextResponse.json({ expired: ids.length, backlogPossible: ids.length === 100 });
 }
