@@ -12,6 +12,7 @@ create table if not exists public.beta_ai_daily_usage (
 
 alter table public.beta_ai_daily_usage enable row level security;
 revoke all on table public.beta_ai_daily_usage from public, anon, authenticated;
+grant select, insert, update, delete on public.beta_ai_daily_usage to service_role;
 
 create or replace function public.consume_beta_ai_daily_quota(
   p_user_id uuid, p_daily_limit integer
