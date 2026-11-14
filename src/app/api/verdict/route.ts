@@ -1,3 +1,4 @@
+import { betaModeRequested, requireBetaInvite } from "@/lib/beta-access";
 import { requireLiveInteractions } from "@/lib/launch-control";
 import { requireTrustedMutation } from "@/lib/request-security";
 import { NextRequest, NextResponse } from "next/server";
@@ -17,6 +18,8 @@ export const maxDuration = 60;
 export async function POST(req: NextRequest) {
   const unavailable = requireLiveInteractions();
   if (unavailable) return unavailable;
+  const denied = await requireBetaInvite();
+  if (denied) return denied;
   const forbiddenOrigin = requireTrustedMutation(req);
   if (forbiddenOrigin) return forbiddenOrigin;
 
@@ -75,6 +78,29 @@ export async function POST(req: NextRequest) {
     photoBuffer = await normalizeOutfitPhoto(photo);
   } catch {
     return NextResponse.json({ error: "Non riesco a leggere la foto." }, { status: 400 });
+  }
+
+  // Server-side, atomic per-user cap before any paid Anthropic request.
+  // The quota is only active in invited beta, with no fallback to a local
+  // Worker counter (which would be unreliable across isolates).
+  if (betaModeRequested()) {
+    const { data: permitted, error: quotaError } = await admin.rpc("consume_beta_ai_daily_quota", {
+      p_user_id: userId,
+      p_daily_limit: 3,
+    });
+    if (quotaError || typeof permitted !== "boolean") {
+      console.error("[verdict] beta AI quota unavailable", { code: quotaError?.code });
+      return NextResponse.json(
+        { error: "Il limite dei pareri non è disponibile. Riprova." },
+        { status: 503 }
+      );
+    }
+    if (!permitted) {
+      return NextResponse.json(
+        { error: "Hai esaurito i 3 pareri AI disponibili oggi nella beta." },
+        { status: 429, headers: { "Cache-Control": "no-store" } }
+      );
+    }
   }
 
   // Primo parere AI.

@@ -179,7 +179,7 @@ export function VoteGate({
         email,
         // ?resume=1 sopravvive al round-trip dei token (che usano l'hash):
         // al ritorno il flusso riprende dalla richiesta più recente.
-        options: { emailRedirectTo: `${window.location.origin}/?resume=1` },
+        options: { shouldCreateUser: false, emailRedirectTo: `${window.location.origin}/?resume=1` },
       });
       if (error) {
         setMagicError("Il link non è partito. Controlla l'indirizzo e riprova.");

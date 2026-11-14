@@ -8,6 +8,7 @@ export default function Home() {
   // Local development and Playwright mocks remain usable without external keys.
   // Vercel environments must pass the release gate before collecting photos.
   const liveFlowEnabled = liveInteractionsEnabled(process.env);
+  const inviteOnly = process.env.BETA_ENABLED === "true" && process.env.LAUNCH_ENABLED !== "true";
   return (
     <>
       <nav className="fixed inset-x-0 top-0 z-50 flex items-center justify-between bg-gradient-to-b from-ink/95 to-transparent px-6 py-4">
@@ -15,17 +16,17 @@ export default function Home() {
           <Brand size={21} />
         </a>
         <a
-          href="#flow"
+          href={inviteOnly ? "/login" : "#flow"}
           className="rounded-full bg-gold px-5 py-2.5 text-[13px] font-semibold uppercase tracking-[0.08em] text-ink transition-colors hover:bg-gold-bright"
         >
-          {liveFlowEnabled ? "Prova ora" : "Anteprima"}
+          {inviteOnly ? "Entra" : liveFlowEnabled ? "Prova ora" : "Anteprima"}
         </a>
       </nav>
 
       <div id="top" />
       <Hero />
       <div id="flow">
-        <Flow enabled={liveFlowEnabled} />
+        <Flow enabled={liveFlowEnabled} inviteOnly={inviteOnly} />
       </div>
 
       <section className="mx-auto max-w-[640px] border-t border-gold/10 px-6 py-20 text-center">
