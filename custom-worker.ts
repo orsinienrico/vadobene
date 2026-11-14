@@ -12,10 +12,25 @@ type SchedulerBindings = {
   CRON_SECRET?: string;
   SCHEDULER_ENABLED?: string;
   NEXT_PUBLIC_SITE_URL?: string;
+  VB_PREVIEW_LOCKED?: string;
 };
 
 export default {
-  fetch: app.fetch,
+  fetch(request: Request, env: SchedulerBindings, ctx: unknown) {
+    // Preview URLs are public by default. Only an unprivileged healthcheck is
+    // allowed until Cloudflare Access is configured and explicitly approved.
+    if (env.VB_PREVIEW_LOCKED === "true" && new URL(request.url).pathname !== "/api/health") {
+      return new Response(JSON.stringify({ error: "Preview non accessibile." }), {
+        status: 403,
+        headers: {
+          "Content-Type": "application/json; charset=utf-8",
+          "Cache-Control": "no-store",
+          "X-Robots-Tag": "noindex, nofollow",
+        },
+      });
+    }
+    return app.fetch(request, env, ctx);
+  },
   async scheduled(controller: { cron: string }, env: SchedulerBindings, ctx: unknown) {
     // Migration defaults to OFF. Do not run privileged DB jobs in a preview.
     if (env.SCHEDULER_ENABLED !== "true") return;
