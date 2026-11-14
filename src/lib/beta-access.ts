@@ -38,7 +38,7 @@ export async function requireBetaInvite(): Promise<NextResponse | null> {
   if (!betaModeRequested()) return null;
   const supabase = await createClient();
   const { data, error } = await supabase.auth.getUser();
-  if (error || !data.user || data.user.is_anonymous === true || !data.user.email) {
+  if (error || !data.user || data.user.is_anonymous === true || !data.user.email || !data.user.email_confirmed_at) {
     return NextResponse.json(
       { error: "Accedi con l'email invitata per usare la beta.", loginUrl: "/login" },
       { status: 401, headers: { "Cache-Control": "no-store" } }
