@@ -36,3 +36,45 @@ jobs:
           LAUNCH_ENABLED: "false"
           SCHEDULER_ENABLED: "false"
           SCHEDULER_CONFIRMED: "false"
+
+      - name: Smoke test actual Workers runtime without external credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm exec wrangler dev --local --port 8787 > /tmp/vadobene-wrangler.log 2>&1 &
+          pid=$!
+          trap 'kill "$pid" 2>/dev/null || true' EXIT
+          ready=0
+          for i in $(seq 1 90); do
+            if curl -fsS --max-time 2 http://127.0.0.1:8787/api/health > /tmp/vadobene-health.json 2>/dev/null; then
+              ready=1
+              break
+            fi
+            sleep 2
+          done
+          if [ "$ready" -ne 1 ]; then
+            tail -n 100 /tmp/vadobene-wrangler.log
+            exit 1
+          fi
+          grep -q '"ok":true' /tmp/vadobene-health.json
+          upload_status=$(curl -sS -o /tmp/vadobene-upload-response -w '%{http_code}' \
+            -X POST 'http://127.0.0.1:8787/api/verdict' \
+            -H 'Content-Type: application/json' -d '{}')
+          if [ "$upload_status" != "503" ]; then
+            echo "Prelaunch upload must fail closed (got HTTP $upload_status)"
+            exit 1
+          fi
+          cron_status=$(curl -sS -o /tmp/vadobene-cron-response -w '%{http_code}' \
+            'http://127.0.0.1:8787/api/cron/close-juries')
+          if [ "$cron_status" != "503" ]; then
+            echo "Cron without a secret must fail closed (got HTTP $cron_status)"
+            exit 1
+          fi
+          echo "Workers runtime healthy; photo upload and unauthenticated cron safely disabled."
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
+          NEXT_PUBLIC_SITE_URL: https://example.invalid
+          LAUNCH_ENABLED: "false"
+          SCHEDULER_ENABLED: "false"
+          SCHEDULER_CONFIRMED: "false"
