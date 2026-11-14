@@ -60,3 +60,7 @@ Stripe currently grants a Pro entitlement on paid Checkout and handles deleted s
 
 ## Operational update (2026-11-14)
 Migration 0010 was applied to the dedicated empty VadoBene database; RLS enabled, anon/authenticated table reads and RPC execution denied, service-role execution granted. Runtime/concurrent quota test with a real invited user remains pending. `BETA_AUTH_ENABLED` is a separate explicit OTP canary switch (requires `BETA_ENABLED=true`, configured Supabase URL/key, origin and allowlist); keep `BETA_READY_CONFIRMED=false` during OTP tests. No photos, commercial features or unlocked developer previews. Never enable the canary until SMTP, disabled public signup/anonymous sign-ins and an operator-only allowlist are configured.
+
+
+## Deployment attempt — 2026-11-14
+Cloudflare production build settings now target this beta branch (owner screenshot). Trigger a gated deployment with public Worker URL still disabled; retain all release flags off. Successful build alone does not authorize public access or real user data.
