@@ -43,9 +43,9 @@ describe("server-side beta auth guard", () => {
     }
   });
 
-  function user(email: string | null, is_anonymous = false) {
+  function user(email: string | null, is_anonymous = false, confirmed = true) {
     vi.mocked(createClient).mockResolvedValue({
-      auth: { getUser: async () => ({ data: { user: email ? { email, id: "uid", is_anonymous } : null }, error: null }) },
+      auth: { getUser: async () => ({ data: { user: email ? { email, id: "uid", is_anonymous, email_confirmed_at: confirmed ? "2026-11-14T00:00:00Z" : undefined } : null }, error: null }) },
     } as unknown as Awaited<ReturnType<typeof createClient>>);
   }
 
@@ -58,6 +58,10 @@ describe("server-side beta auth guard", () => {
     user("tester@example.com", true);
     const denied = await requireBetaInvite();
     expect(denied?.status).toBe(401);
+  });
+  it("denies email addresses that have not been verified", async () => {
+    user("tester@example.com", false, false);
+    expect((await requireBetaInvite())?.status).toBe(401);
   });
   it("denies authenticated non-invited users", async () => {
     user("someone.else@example.com");
