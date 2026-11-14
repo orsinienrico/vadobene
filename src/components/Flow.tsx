@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { PhotoDrop } from "./PhotoDrop";
 import { OccasionChips } from "./OccasionChips";
 import { ScanLines } from "./ScanLines";
@@ -20,7 +20,7 @@ import { track } from "@/lib/analytics";
  * Stato e transizioni vivono in `flow-machine.ts` (reducer puro); qui restano
  * solo fetch ed effetti, che dispatchano azioni.
  */
-export function Flow({ enabled = true }: { enabled?: boolean }) {
+export function Flow({ enabled = true, inviteOnly = false }: { enabled?: boolean; inviteOnly?: boolean }) {
   if (!enabled) {
     return (
       <section className="mx-auto max-w-[680px] px-6 pb-[110px] pt-[72px] text-center">
@@ -35,7 +35,46 @@ export function Flow({ enabled = true }: { enabled?: boolean }) {
       </section>
     );
   }
-  return <LiveFlow />;
+  return inviteOnly ? <InviteOnlyFlow /> : <LiveFlow />;
+}
+
+/** Public landing is visible; live photo flow only mounts after server invite check. */
+function InviteOnlyFlow() {
+  const [mode, setMode] = useState<"loading" | "invited" | "login" | "not-invited" | "unavailable">("loading");
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/beta/status", { cache: "no-store" })
+      .then((response) => {
+        if (cancelled) return;
+        setMode(response.ok ? "invited" : response.status === 401 ? "login" :
+          response.status === 403 ? "not-invited" : "unavailable");
+      })
+      .catch(() => { if (!cancelled) setMode("unavailable"); });
+    return () => { cancelled = true; };
+  }, []);
+
+  if (mode === "invited") return <LiveFlow />;
+  return (
+    <section className="mx-auto max-w-[680px] px-6 pb-[110px] pt-[72px] text-center">
+      <h2 className="font-display text-[clamp(28px,3.6vw,40px)] font-normal">
+        {mode === "loading" ? "Controllo l'invito…" :
+          mode === "not-invited" ? "L'invito non è ancora attivo." :
+          mode === "unavailable" ? "La beta non è disponibile." :
+          "Sei nel Giurì?"}
+      </h2>
+      <p className="mt-4 text-[15px] leading-[1.7] text-muted">
+        {mode === "login" ? "Accedi con l'indirizzo email invitato per provare VadoBene." :
+          mode === "not-invited" ? "L'accesso è riservato agli indirizzi invitati. Contatta chi ti ha invitato." :
+          mode === "unavailable" ? "Non raccogliamo foto finché tutti i servizi non sono stati verificati." :
+          "La beta è riservata a un piccolo gruppo di partecipanti."}
+      </p>
+      {mode === "login" && (
+        <a href="/login" className="mt-7 inline-flex rounded-full bg-gold px-7 py-3 font-semibold text-ink">
+          Entra nella beta
+        </a>
+      )}
+    </section>
+  );
 }
 
 function LiveFlow() {
