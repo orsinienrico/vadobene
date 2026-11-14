@@ -53,7 +53,7 @@ function InviteOnlyFlow() {
     return () => { cancelled = true; };
   }, []);
 
-  if (mode === "invited") return <LiveFlow />;
+  if (mode === "invited") return <LiveFlow inviteOnly />;
   return (
     <section className="mx-auto max-w-[680px] px-6 pb-[110px] pt-[72px] text-center">
       <h2 className="font-display text-[clamp(28px,3.6vw,40px)] font-normal">
@@ -77,7 +77,7 @@ function InviteOnlyFlow() {
   );
 }
 
-function LiveFlow() {
+function LiveFlow({ inviteOnly = false }: { inviteOnly?: boolean } = {}) {
   const [state, dispatch] = useFlowMachine();
   const { occasions, stage, photo, occasion, verdict, error, submitting, scanSlow, jury, summary } =
     state;
@@ -389,6 +389,7 @@ function LiveFlow() {
             <p role="alert" className="mb-3 text-center text-[13px] text-bad">{error}</p>
           )}
           <VoteGate
+            inviteOnly={inviteOnly}
             onCreditFull={(credit, opts) => {
               // Il credito server arriva dal gate (mirror nello stato).
               dispatch({ type: "creditSynced", credit });
