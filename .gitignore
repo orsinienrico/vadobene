@@ -12,3 +12,9 @@ coverage/
 next-env.d.ts
 .DS_Store
 .claude/settings.local.json
+
+# Cloudflare/OpenNext build output and local credentials
+.open-next/
+.wrangler/
+.dev.vars*
+cloudflare-env.d.ts
