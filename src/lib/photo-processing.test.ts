@@ -24,6 +24,11 @@ describe("Cloudflare JPEG privacy stripping", () => {
     const sanitized = stripJpegMetadata(file);
     expect([...sanitized]).toEqual([...jpeg([segment(0xe0, [0x4a, 0x46]),segment(0xdb, [0x00, 0x02])])]);
   });
+  it("discards trailing bytes appended after JPEG end-of-image", () => {
+    const valid = jpeg([segment(0xdb, [0x00, 0x02])]);
+    const malicious = new Uint8Array([...valid, 0x45, 0x78, 0x69, 0x66, 0x47, 0x50, 0x53]);
+    expect([...stripJpegMetadata(malicious)]).toEqual([...valid]);
+  });
   it("fails closed on malformed marker lengths", () => {
     expect(() => stripJpegMetadata(new Uint8Array([0xff,0xd8,0xff,0xe1,0x00,0x10]))).toThrow();
   });
