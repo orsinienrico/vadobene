@@ -103,7 +103,7 @@ describe("POST /api/stripe/webhook", () => {
     expect(res.status).toBe(200);
     await expect(res.json()).resolves.toEqual({ received: true });
     expect(rpc).toHaveBeenCalledExactlyOnceWith("process_stripe_event", {
-      p_event_id: "evt_boost_1",
+      p_event_id: "checkout:cs_test_1",
       p_user_id: "user-1",
       p_action: "boost",
     });
@@ -125,7 +125,7 @@ describe("POST /api/stripe/webhook", () => {
     expect(res.status).toBe(500);
     await expect(res.json()).resolves.toEqual({ error: "Evento non processato. Riprova." });
     expect(rpc).toHaveBeenCalledExactlyOnceWith("process_stripe_event", {
-      p_event_id: "evt_award_fail",
+      p_event_id: "checkout:cs_test_1",
       p_user_id: "user-1",
       p_action: "boost",
     });
@@ -140,7 +140,7 @@ describe("POST /api/stripe/webhook", () => {
     const res = await postEvent(event, signPayload(JSON.stringify(event)));
     expect(res.status).toBe(200);
     expect(rpc).toHaveBeenCalledExactlyOnceWith("process_stripe_event", {
-      p_event_id: "evt_plan",
+      p_event_id: "checkout:cs_pro",
       p_user_id: "user-1",
       p_action: "pro",
     });
@@ -164,7 +164,7 @@ describe("POST /api/stripe/webhook", () => {
     expect(res.status).toBe(200);
     await expect(res.json()).resolves.toEqual({ received: true });
     expect(rpc).toHaveBeenCalledExactlyOnceWith("process_stripe_event", {
-      p_event_id: "evt_async_paid",
+      p_event_id: "checkout:cs_test_1",
       p_user_id: "user-1",
       p_action: "boost",
     });
