@@ -1,3 +1,4 @@
+import { betaModeRequested, requireBetaInvite } from "@/lib/beta-access";
 import { liveInteractionsEnabled } from "@/lib/launch-control";
 import Link from "next/link";
 import type { Metadata } from "next";
@@ -19,7 +20,7 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  if (!liveInteractionsEnabled()) return { title: "vado bene?" };
+  if (!liveInteractionsEnabled() || betaModeRequested()) return { title: "vado bene?" };
   if (!/^[0-9a-f-]{36}$/i.test(id)) return { title: "vado bene?" };
 
   const supabase = createAdminClient();
@@ -52,6 +53,12 @@ export async function generateMetadata({
 export default async function CardPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   if (!liveInteractionsEnabled()) notFound();
+  // Beta cards may contain an optional photo and non-public feedback.
+  // Require membership even when a private permalink is shared externally.
+  if (betaModeRequested()) {
+    const denied = await requireBetaInvite();
+    if (denied) notFound();
+  }
 
   // UUID valido altrimenti notFound.
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
