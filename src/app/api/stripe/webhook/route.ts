@@ -35,6 +35,7 @@ export async function POST(req: NextRequest) {
   // quando Stripe consegna due webhook simultaneamente.
   let userId: string | undefined;
   let action: "boost" | "pro" | "free" | undefined;
+  let economicEventId = event.id;
 
   if (event.type === "checkout.session.completed" || event.type === "checkout.session.async_payment_succeeded") {
     const session = event.data.object;
@@ -43,6 +44,9 @@ export async function POST(req: NextRequest) {
     if (session.payment_status !== "paid") {
       return NextResponse.json({ received: true, paymentPending: true });
     }
+    // Two distinct Stripe event IDs may describe the same paid Checkout session.
+    // Deduplicate economically by checkout session, not webhook delivery ID.
+    economicEventId = `checkout:${session.id}`;
     userId = session.metadata?.userId ?? session.client_reference_id ?? undefined;
     if (session.metadata?.product === "boost") action = "boost";
     if (session.metadata?.product === "pro_monthly" || session.metadata?.product === "pro_yearly") {
@@ -61,7 +65,7 @@ export async function POST(req: NextRequest) {
   // accredita/aggiorna users in una singola transazione Postgres.
   // False = duplicato già applicato; l'errore transazionale fa rollback.
   const { data: applied, error } = await admin.rpc("process_stripe_event", {
-    p_event_id: event.id,
+    p_event_id: economicEventId,
     p_user_id: userId,
     p_action: action,
   });
