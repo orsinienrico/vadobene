@@ -17,9 +17,20 @@ type SchedulerBindings = {
 
 export default {
   fetch(request: Request, env: SchedulerBindings, ctx: unknown) {
-    // Preview URLs are public by default. Only an unprivileged healthcheck is
-    // allowed until Cloudflare Access is configured and explicitly approved.
-    if (env.VB_PREVIEW_LOCKED === "true" && new URL(request.url).pathname !== "/api/health") {
+    // Private-preview policy: allow *read-only* landing, privacy and static
+    // assets behind Cloudflare Access; never accept API mutations, private
+    // cards, paywall or user photos even if the Access policy is misconfigured.
+    const pathname = new URL(request.url).pathname;
+    const readOnly = request.method === "GET" || request.method === "HEAD";
+    const publicPreviewPath = pathname === "/api/health"
+      || (readOnly && (
+        pathname === "/" || pathname === "/privacy" ||
+        pathname.startsWith("/_next/static/") ||
+        pathname === "/favicon.ico" ||
+        pathname === "/apple-touch-icon.png" ||
+        pathname === "/icon.png"
+      ));
+    if (env.VB_PREVIEW_LOCKED === "true" && !publicPreviewPath) {
       return new Response(JSON.stringify({ error: "Preview non accessibile." }), {
         status: 403,
         headers: {
