@@ -4,12 +4,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { getAiVerdict } from "@/lib/anthropic";
 import { AiVerdict, VerdictRequest } from "@/lib/contracts";
-import sharp from "sharp";
+import { normalizeOutfitPhoto } from "@/lib/photo-processing";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
-
-const MAX_SIDE = 1280;
 
 /**
  * POST /api/verdict — Fase 1.
@@ -72,13 +70,9 @@ export async function POST(req: NextRequest) {
   // Resize server-side se > 1280px (doppia garanzia al resize client).
   let photoBuffer: Buffer;
   try {
-    const raw = Buffer.from(photo.replace(/^data:[^;]+;base64,/, ""), "base64");
-    // Always re-encode, remove EXIF/GPS and limit decompression bombs.
-    photoBuffer = await sharp(raw, { limitInputPixels: 20_000_000, failOn: "error" })
-      .rotate()
-      .resize({ width: MAX_SIDE, height: MAX_SIDE, fit: "inside", withoutEnlargement: true })
-      .jpeg({ quality: 82 })
-      .toBuffer();
+    // Re-encode and strip GPS/EXIF on both Node and Cloudflare Workers.
+    // Raw uploads are never persisted or sent to the AI provider.
+    photoBuffer = await normalizeOutfitPhoto(photo);
   } catch {
     return NextResponse.json({ error: "Non riesco a leggere la foto." }, { status: 400 });
   }

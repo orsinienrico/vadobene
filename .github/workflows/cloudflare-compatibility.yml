@@ -1,0 +1,131 @@
+name: Cloudflare Workers compatibility (no deployment)
+
+on:
+  pull_request:
+    paths:
+      - src/**
+      - public/**
+      - open-next.config.ts
+      - custom-worker.ts
+      - wrangler.jsonc
+      - package.json
+      - pnpm-lock.yaml
+      - .github/workflows/cloudflare-compatibility.yml
+
+permissions:
+  contents: read
+
+jobs:
+  cloudflare-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Build and validate Worker through Wrangler build hook (no deployment)
+        run: pnpm exec wrangler deploy --dry-run --outdir /tmp/vadobene-worker
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
+          NEXT_PUBLIC_SITE_URL: https://example.invalid
+          LAUNCH_ENABLED: "false"
+          SCHEDULER_ENABLED: "false"
+          SCHEDULER_CONFIRMED: "false"
+
+      - name: Smoke test actual Workers runtime without external credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm exec wrangler dev --local --port 8787 > /tmp/vadobene-wrangler.log 2>&1 &
+          pid=$!
+          trap 'kill "$pid" 2>/dev/null || true' EXIT
+          ready=0
+          for i in $(seq 1 90); do
+            if curl -fsS --max-time 2 http://127.0.0.1:8787/api/health > /tmp/vadobene-health.json 2>/dev/null; then
+              ready=1
+              break
+            fi
+            sleep 2
+          done
+          if [ "$ready" -ne 1 ]; then
+            tail -n 100 /tmp/vadobene-wrangler.log
+            exit 1
+          fi
+          grep -q '"ok":true' /tmp/vadobene-health.json
+          upload_status=$(curl -sS -o /tmp/vadobene-upload-response -w '%{http_code}' \
+            -X POST 'http://127.0.0.1:8787/api/verdict' \
+            -H 'Content-Type: application/json' -d '{}')
+          if [ "$upload_status" != "503" ]; then
+            echo "Prelaunch upload must fail closed (got HTTP $upload_status)"
+            exit 1
+          fi
+          cron_status=$(curl -sS -o /tmp/vadobene-cron-response -w '%{http_code}' \
+            'http://127.0.0.1:8787/api/cron/close-juries')
+          if [ "$cron_status" != "503" ]; then
+            echo "Cron without a secret must fail closed (got HTTP $cron_status)"
+            exit 1
+          fi
+          echo "Workers runtime healthy; photo upload and unauthenticated cron safely disabled."
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
+          NEXT_PUBLIC_SITE_URL: https://example.invalid
+          LAUNCH_ENABLED: "false"
+          SCHEDULER_ENABLED: "false"
+          SCHEDULER_CONFIRMED: "false"
+
+      - name: Assert preview allows only read-only landing and blocks private APIs
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm exec wrangler dev --local --port 8788 --var VB_PREVIEW_LOCKED:true > /tmp/vadobene-preview-lock.log 2>&1 &
+          pid=$!
+          trap 'kill "$pid" 2>/dev/null || true' EXIT
+          ready=0
+          for i in $(seq 1 60); do
+            if curl -fsS --max-time 2 http://127.0.0.1:8788/api/health > /tmp/vadobene-preview-health.json 2>/dev/null; then
+              ready=1
+              break
+            fi
+            sleep 2
+          done
+          if [ "$ready" -ne 1 ]; then
+            tail -n 80 /tmp/vadobene-preview-lock.log
+            exit 1
+          fi
+          grep -q '"ok":true' /tmp/vadobene-preview-health.json
+          landing_status=$(curl -sS -o /tmp/vadobene-preview-landing -w '%{http_code}' \
+            http://127.0.0.1:8788/)
+          if [ "$landing_status" != "200" ]; then
+            echo "Read-only preview landing failed with HTTP $landing_status"
+            tail -n 80 /tmp/vadobene-preview-lock.log
+            exit 1
+          fi
+          for path in /api/cron/close-juries /api/stripe/checkout /api/verdict /c/00000000-0000-0000-0000-000000000000; do
+            status=$(curl -sS -o /tmp/vadobene-locked-response -w '%{http_code}' \
+              "http://127.0.0.1:8788$path")
+            if [ "$status" != "403" ]; then
+              echo "Preview must deny $path, received HTTP $status"
+              exit 1
+            fi
+          done
+          post_status=$(curl -sS -o /tmp/vadobene-locked-post -w '%{http_code}' \
+            -X POST -H 'Content-Type: application/json' -d '{}' \
+            http://127.0.0.1:8788/api/verdict)
+          if [ "$post_status" != "403" ]; then
+            echo "Preview must reject POST /api/verdict (got HTTP $post_status)"
+            exit 1
+          fi
+          echo "Cloudflare preview allows public landing; denies private routes, writes and payments."
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
+          NEXT_PUBLIC_SITE_URL: https://example.invalid
+          LAUNCH_ENABLED: "false"
+          SCHEDULER_ENABLED: "false"
+          SCHEDULER_CONFIRMED: "false"
