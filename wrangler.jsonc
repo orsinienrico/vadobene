@@ -32,5 +32,16 @@
   },
   "build": {
     "command": "pnpm cf:build"
+  },
+  "previews": {
+    "vars": {
+      "VB_IMAGE_PROCESSOR": "cloudflare",
+      "LAUNCH_ENABLED": "false",
+      "SCHEDULER_ENABLED": "false",
+      "SCHEDULER_CONFIRMED": "false"
+    },
+    "images": {
+      "binding": "IMAGES"
+    }
   }
 }
