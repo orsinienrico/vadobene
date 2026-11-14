@@ -64,3 +64,7 @@ Migration 0010 was applied to the dedicated empty VadoBene database; RLS enabled
 
 ## Deployment attempt — 2026-11-14
 Cloudflare production build settings now target this beta branch (owner screenshot). Trigger a gated deployment with public Worker URL still disabled; retain all release flags off. Successful build alone does not authorize public access or real user data.
+
+
+## Supabase integration build — 2026-11-14
+Operator reports configuring the three NEXT_PUBLIC build variables and correcting the runtime service-role credential to Secret. Trigger a fresh build with beta and launch flags still off. Verify runtime credentials survived deployment, including the public anon key, before enabling any authentication. No secret values are stored in this repository.
