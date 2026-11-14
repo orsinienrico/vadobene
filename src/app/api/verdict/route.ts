@@ -98,7 +98,7 @@ export async function POST(req: NextRequest) {
     if (!permitted) {
       return NextResponse.json(
         { error: "Hai esaurito i 3 pareri AI disponibili oggi nella beta." },
-        { status: 429, headers: { "Retry-After": "3600", "Cache-Control": "no-store" } }
+        { status: 429, headers: { "Cache-Control": "no-store" } }
       );
     }
   }
