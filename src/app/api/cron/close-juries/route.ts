@@ -122,7 +122,12 @@ export async function GET(req: NextRequest) {
           headline: summary.headline,
           cardUrl: `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://vadobene.app"}/c/${request.id}`,
         });
-        await sendEmail(owner.email, subject, html);
+        const delivered = await sendEmail(owner.email, subject, html);
+        if (!delivered) {
+          // A notification failure must not reopen an already completed jury,
+          // which would cause repeated credits or duplicate AI votes.
+          console.error("[close-juries] email not delivered", { requestId: request.id });
+        }
       }
     } catch (err) {
       // Revert: la request torna jury_open (il claim è ancora nostro), il

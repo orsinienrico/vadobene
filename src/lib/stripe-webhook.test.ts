@@ -33,6 +33,7 @@ function boostEvent(id = "evt_boost_1"): Stripe.Event {
       object: {
         id: "cs_test_1",
         object: "checkout.session",
+        payment_status: "paid",
         metadata: { userId: "user-1", product: "boost" },
       },
     },
@@ -102,7 +103,7 @@ describe("POST /api/stripe/webhook", () => {
     expect(res.status).toBe(200);
     await expect(res.json()).resolves.toEqual({ received: true });
     expect(rpc).toHaveBeenCalledExactlyOnceWith("process_stripe_event", {
-      p_event_id: "evt_boost_1",
+      p_event_id: "checkout:cs_test_1",
       p_user_id: "user-1",
       p_action: "boost",
     });
@@ -124,7 +125,7 @@ describe("POST /api/stripe/webhook", () => {
     expect(res.status).toBe(500);
     await expect(res.json()).resolves.toEqual({ error: "Evento non processato. Riprova." });
     expect(rpc).toHaveBeenCalledExactlyOnceWith("process_stripe_event", {
-      p_event_id: "evt_award_fail",
+      p_event_id: "checkout:cs_test_1",
       p_user_id: "user-1",
       p_action: "boost",
     });
@@ -134,14 +135,38 @@ describe("POST /api/stripe/webhook", () => {
     const { rpc } = makeAdmin();
     const event = {
       ...boostEvent("evt_plan"),
-      data: { object: { id: "cs_pro", object: "checkout.session", metadata: { userId: "user-1", product: "pro_monthly" } } },
+      data: { object: { id: "cs_pro", object: "checkout.session", payment_status: "paid", metadata: { userId: "user-1", product: "pro_monthly" } } },
     } as unknown as Stripe.Event;
     const res = await postEvent(event, signPayload(JSON.stringify(event)));
     expect(res.status).toBe(200);
     expect(rpc).toHaveBeenCalledExactlyOnceWith("process_stripe_event", {
-      p_event_id: "evt_plan",
+      p_event_id: "checkout:cs_pro",
       p_user_id: "user-1",
       p_action: "pro",
+    });
+  });
+
+  it("pagamento in sospeso: nessun credito e nessun piano attivato", async () => {
+    const { rpc } = makeAdmin();
+    const event = boostEvent("evt_pending");
+    (event.data.object as Stripe.Checkout.Session).payment_status = "unpaid";
+    const res = await postEvent(event, signPayload(JSON.stringify(event)));
+    expect(res.status).toBe(200);
+    await expect(res.json()).resolves.toEqual({ received: true, paymentPending: true });
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it("pagamento asincrono confermato: accredita solo dopo la conferma", async () => {
+    const { rpc } = makeAdmin();
+    const event = boostEvent("evt_async_paid");
+    event.type = "checkout.session.async_payment_succeeded";
+    const res = await postEvent(event, signPayload(JSON.stringify(event)));
+    expect(res.status).toBe(200);
+    await expect(res.json()).resolves.toEqual({ received: true });
+    expect(rpc).toHaveBeenCalledExactlyOnceWith("process_stripe_event", {
+      p_event_id: "checkout:cs_test_1",
+      p_user_id: "user-1",
+      p_action: "boost",
     });
   });
 

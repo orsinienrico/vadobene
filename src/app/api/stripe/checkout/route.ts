@@ -53,6 +53,18 @@ export async function POST(req: NextRequest) {
     .eq("id", userId)
     .single();
 
+  // Bind a Stripe customer to the authenticated Supabase user rather than
+  // relying on an email address (which is not an authorization boundary).
+  const existingCustomers = await stripe().customers.search({
+    query: `metadata['userId']:'${userId}'`,
+    limit: 1,
+  });
+  const customer = existingCustomers.data[0] ??
+    await stripe().customers.create({
+      email: user?.email ?? undefined,
+      metadata: { userId },
+    });
+
   const session = await stripe().checkout.sessions.create({
     mode: body.data.product === "boost" ? "payment" : "subscription",
     line_items: [{ price: priceId, quantity: 1 }],
@@ -60,7 +72,7 @@ export async function POST(req: NextRequest) {
     client_reference_id: userId,
     metadata: { userId, product: body.data.product },
     subscription_data: body.data.product === "boost" ? undefined : { metadata: { userId } },
-    customer_email: user?.email ?? undefined,
+    customer: customer.id,
     success_url: `${siteOrigin}/me`,
     cancel_url: `${siteOrigin}/me`,
   });
