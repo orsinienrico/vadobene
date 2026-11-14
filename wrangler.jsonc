@@ -38,10 +38,12 @@
       "VB_IMAGE_PROCESSOR": "cloudflare",
       "LAUNCH_ENABLED": "false",
       "SCHEDULER_ENABLED": "false",
-      "SCHEDULER_CONFIRMED": "false"
+      "SCHEDULER_CONFIRMED": "false",
+      "VB_PREVIEW_LOCKED": "true"
     },
     "images": {
       "binding": "IMAGES"
     }
-  }
+  },
+  "preview_urls": true
 }
