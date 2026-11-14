@@ -33,7 +33,7 @@ function request(email: unknown, origin = "https://beta.example.com") {
 }
 
 describe("POST /api/beta/request-code", () => {
-  const otp = vi.fn(async () => ({ error: null }));
+  const otp = vi.fn(async (): Promise<{ error: { code: string } | null }> => ({ error: null }));
   beforeEach(() => {
     for (const [key, value] of Object.entries(variables)) process.env[key] = value;
     vi.mocked(createClient).mockReset();
