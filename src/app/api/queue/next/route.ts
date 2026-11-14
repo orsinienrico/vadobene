@@ -59,8 +59,8 @@ export async function GET() {
     );
   }
 
-  // Richieste in jury_open, escluse le proprie, deadline più vicina prima.
-  const { data: candidates, error } = await supabase
+  const admin = createAdminClient();\n\n  // Authorized server-side query: no open-jury request metadata in the client Data API.\n  // Richieste in jury_open, escluse le proprie, deadline più vicina prima.
+  const { data: candidates, error } = await admin
     .from("requests")
     .select("id, occasion_id, custom_occasion, jury_deadline_at, votes_target, photo_path")
     .eq("status", "jury_open")
@@ -75,7 +75,7 @@ export async function GET() {
   }
 
   // Escludi quelle già votate (in una query sola).
-  const { data: voted, error: vErr } = await supabase
+  const { data: voted, error: vErr } = await admin
     .from("votes")
     .select("request_id")
     .eq("juror_id", userId)
@@ -93,7 +93,7 @@ export async function GET() {
 
   // Peso §6.4: richieste con meno voti prima; Pro +1 posizione.
   const ids = remaining.map((r) => r.id);
-  const { data: voteCounts, error: cErr } = await supabase
+  const { data: voteCounts, error: cErr } = await admin
     .from("votes")
     .select("request_id")
     .in("request_id", ids);
@@ -119,7 +119,7 @@ export async function GET() {
   // Il giurato non è proprietario del file: la sua chiave autenticata non ha
   // diritto SELECT sul bucket privato. Firma soltanto lato server, dopo i
   // controlli su request aperta e user/juror.
-  const { data: signed, error: signError } = await createAdminClient().storage
+  const { data: signed, error: signError } = await admin.storage
     .from("outfits")
     .createSignedUrl(card.photo_path, 60);
   if (signError || !signed?.signedUrl) {
