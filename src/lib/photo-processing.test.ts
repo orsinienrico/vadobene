@@ -1,5 +1,9 @@
-import { describe, expect, it } from "vitest";
-import { stripJpegMetadata } from "./photo-processing";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { normalizeOutfitPhoto, stripJpegMetadata } from "./photo-processing";
+
+const cfContext = vi.hoisted(() => ({ current: null as null | { env: Record<string, unknown> } }));
+vi.mock("@opennextjs/cloudflare", () => ({ getCloudflareContext: () => cfContext.current }));
+afterEach(() => { delete process.env.VB_IMAGE_PROCESSOR; cfContext.current = null; });
 
 function segment(marker: number, data: number[]) {
   const len = data.length + 2;
@@ -53,5 +57,50 @@ describe("Cloudflare JPEG privacy stripping", () => {
   });
   it("fails closed on non-JPEG content", () => {
     expect(() => stripJpegMetadata(new Uint8Array([0x89,0x50,0x4e,0x47]))).toThrow();
+  });
+});
+
+describe("Cloudflare Images async output contract", () => {
+  it("awaits output, strips metadata and returns only the transformed JPEG", async () => {
+    const transformed = jpeg([
+      segment(0xe1, [0x45, 0x58, 0x49, 0x46]),
+      segment(0xdb, [0x00, 0x02]),
+    ]);
+    const output = vi.fn(async () => ({
+      response: () => new Response(transformed, { headers: { "content-type": "image/jpeg" } }),
+    }));
+    const transform = vi.fn(() => ({ output }));
+    const info = vi.fn(async () => ({ width: 1600, height: 1200 }));
+    cfContext.current = { env: { IMAGES: { info, input: () => ({ transform }) } } };
+    process.env.VB_IMAGE_PROCESSOR = "cloudflare";
+
+    const result = await normalizeOutfitPhoto(Buffer.from("fake-private-photo").toString("base64"));
+    expect([...result]).toEqual([...jpeg([segment(0xdb, [0x00, 0x02])])]);
+    expect(transform).toHaveBeenCalledWith({
+      width: 1280, height: 1280, fit: "scale-down", metadata: "none",
+    });
+    expect(output).toHaveBeenCalledWith({ format: "image/jpeg", quality: 82, anim: false });
+  });
+
+  it("fails closed on an Images binding error (does not fall back to unprocessed bytes)", async () => {
+    cfContext.current = { env: { IMAGES: {
+      info: async () => ({ width: 500, height: 500 }),
+      input: () => ({ transform: () => ({ output: async () => { throw new Error("Conversion failed"); } }) }),
+    } } };
+    process.env.VB_IMAGE_PROCESSOR = "cloudflare";
+    await expect(normalizeOutfitPhoto(Buffer.from("private-photo").toString("base64")))
+      .rejects.toThrow("Conversion failed");
+  });
+
+  it("rejects decompression bombs before invoking transformations", async () => {
+    const output = vi.fn();
+    cfContext.current = { env: { IMAGES: {
+      info: async () => ({ width: 10000, height: 10000 }),
+      input: output,
+    } } };
+    process.env.VB_IMAGE_PROCESSOR = "cloudflare";
+    await expect(normalizeOutfitPhoto(Buffer.from("private-photo").toString("base64")))
+      .rejects.toThrow("Invalid source dimensions");
+    expect(output).not.toHaveBeenCalled();
   });
 });
