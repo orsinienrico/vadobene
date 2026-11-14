@@ -29,56 +29,80 @@ function imageStream(bytes: Uint8Array): ReadableStream<Uint8Array> {
   });
 }
 
-/** Drop JPEG APP1-APP15 and COM marker segments before the scan.
- * APP1 typically contains EXIF/GPS; other APP markers can contain XMP and
- * tracking metadata. Preserve APP0/JFIF, DQT, DHT, SOF, SOS and image data.
+/**
+ * Strip all JPEG APPn and COM metadata, including markers between progressive
+ * JPEG scans. Preserve image-control segments and entropy-coded scan data.
+ * The Cloudflare binding already re-encodes with metadata: none: this is an
+ * additional fail-closed boundary before a photo leaves the Worker.
  */
 export function stripJpegMetadata(source: Uint8Array): Uint8Array {
   if (source.length < 4 || source[0] !== 0xff || source[1] !== 0xd8) {
     throw new Error("Invalid JPEG");
   }
-  const parts: Uint8Array[] = [source.subarray(0, 2)];
-  let cursor = 2;
-  while (cursor < source.length) {
-    const start = cursor;
-    if (source[cursor++] !== 0xff) throw new Error("Malformed JPEG header");
-    while (source[cursor] === 0xff) cursor++;
-    const marker = source[cursor++];
-    if (marker === 0xda) {
-      // Preserve the entire compressed scan unchanged. Validate its length.
-      if (cursor + 2 > source.length) throw new Error("Invalid JPEG scan");
-      const n = (source[cursor] << 8) | source[cursor + 1];
-      if (n < 2 || cursor + n > source.length) throw new Error("Invalid JPEG scan");
-      // JPEG data must terminate at the first real End-of-Image marker.
-      // Never carry arbitrary trailing bytes (possible hidden metadata/payload).
-      let endOfImage = -1;
-      for (let i = cursor + n; i < source.length - 1; i++) {
-        if (source[i] === 0xff && source[i + 1] === 0xd9) {
-          endOfImage = i + 2;
-          break;
+  const pieces: Uint8Array[] = [source.subarray(0, 2)];
+  let p = 2;
+  let inScan = false;
+  let sawScan = false;
+  while (p < source.length) {
+    if (inScan) {
+      const from = p;
+      let foundMarker = false;
+      while (p < source.length - 1) {
+        if (source[p] !== 0xff) { p++; continue; }
+        let next = p + 1;
+        while (source[next] === 0xff) next++;
+        if (next >= source.length) throw new Error("Truncated JPEG scan");
+        const marker = source[next];
+        if (marker === 0x00 || (marker >= 0xd0 && marker <= 0xd7)) {
+          // Byte-stuffed FF and legal restart markers are compressed data.
+          p = next + 1;
+          continue;
         }
+        pieces.push(source.subarray(from, p));
+        inScan = false;
+        foundMarker = true;
+        break;
       }
-      if (endOfImage < 0) throw new Error("JPEG end marker missing");
-      parts.push(source.subarray(start, endOfImage));
-      const size = parts.reduce((total, p) => total + p.byteLength, 0);
+      if (!foundMarker) throw new Error("JPEG scan not terminated");
+      continue;
+    }
+
+    const markerStart = p;
+    if (source[p++] !== 0xff) throw new Error("Malformed JPEG marker");
+    while (p < source.length && source[p] === 0xff) p++;
+    if (p >= source.length) throw new Error("Truncated JPEG marker");
+    const marker = source[p++];
+    if (marker === 0xd9) {
+      if (!sawScan) throw new Error("Missing JPEG image scan");
+      pieces.push(source.subarray(markerStart, p));
+      // Intentionally discard bytes appended after the genuine EOI marker.
+      const size = pieces.reduce((n, item) => n + item.byteLength, 0);
       const result = new Uint8Array(size);
-      let pos = 0;
-      for (const part of parts) { result.set(part, pos); pos += part.byteLength; }
+      let cursor = 0;
+      for (const piece of pieces) {
+        result.set(piece, cursor);
+        cursor += piece.byteLength;
+      }
       return result;
     }
-    if (marker === 0xd8 || marker === 0xd9 || marker === 0x00 ||
-        (marker >= 0xd0 && marker <= 0xd7) || marker === 0x01 ||
-        cursor + 2 > source.length) {
+    if (marker === 0xd8 || marker === 0x00 || marker === 0x01 ||
+        (marker >= 0xd0 && marker <= 0xd7) || p + 2 > source.length) {
       throw new Error("Unexpected JPEG marker");
     }
-    const length = (source[cursor] << 8) | source[cursor + 1];
-    if (length < 2 || cursor + length > source.length) throw new Error("Invalid JPEG segment");
-    if (!((marker >= 0xe1 && marker <= 0xef) || marker === 0xfe)) {
-      parts.push(source.subarray(start, cursor + length));
+    const segmentLength = (source[p] << 8) | source[p + 1];
+    if (segmentLength < 2 || p + segmentLength > source.length) {
+      throw new Error("Invalid JPEG segment");
     }
-    cursor += length;
+    if (!(marker >= 0xe0 && marker <= 0xef) && marker !== 0xfe) {
+      pieces.push(source.subarray(markerStart, p + segmentLength));
+    }
+    p += segmentLength;
+    if (marker === 0xda) {
+      sawScan = true;
+      inScan = true;
+    }
   }
-  throw new Error("JPEG scan missing");
+  throw new Error("JPEG end marker missing");
 }
 
 function decodeBase64Photo(photo: string): Buffer {
