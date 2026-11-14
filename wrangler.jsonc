@@ -1,0 +1,33 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "vadobene-app",
+  "main": "custom-worker.ts",
+  "compatibility_date": "2026-11-14",
+  "compatibility_flags": [
+    "nodejs_compat",
+    "global_fetch_strictly_public"
+  ],
+  "workers_dev": false,
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "images": {
+    "binding": "IMAGES"
+  },
+  "triggers": {
+    "crons": [
+      "* * * * *",
+      "*/5 * * * *"
+    ]
+  },
+  "vars": {
+    "VB_IMAGE_PROCESSOR": "cloudflare",
+    "LAUNCH_ENABLED": "false",
+    "SCHEDULER_ENABLED": "false",
+    "SCHEDULER_CONFIRMED": "false"
+  },
+  "observability": {
+    "enabled": true
+  }
+}
