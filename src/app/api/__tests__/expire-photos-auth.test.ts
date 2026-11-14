@@ -33,7 +33,9 @@ describe("GET /api/cron/expire-photos — authorization", () => {
       headers: { authorization: "Bearer test-cron-secret" },
     });
     const query = { neq: vi.fn() };
-    const neqResult = { not: vi.fn(async () => ({ data: [], error: null })) };
+    const neqResult = { not: vi.fn(() => ({
+      order: () => ({ limit: async () => ({ data: [], error: null }) }),
+    })) };
     query.neq.mockReturnValue(neqResult);
     const from = vi.fn(() => ({ select: () => ({ lt: () => ({ eq: () => query }) }) }));
     vi.mocked(createAdminClient).mockReturnValue({ from } as unknown as ReturnType<typeof createAdminClient>);
