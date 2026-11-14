@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
   let userId: string | undefined;
   let action: "boost" | "pro" | "free" | undefined;
 
-  if (event.type === "checkout.session.completed") {
+  if (event.type === "checkout.session.completed" || event.type === "checkout.session.async_payment_succeeded") {
     const session = event.data.object;
     // Checkout may complete before an asynchronous payment has settled.
     // Never grant paid credits or subscriptions while payment is pending.
