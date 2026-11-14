@@ -9,7 +9,7 @@ const MAX_STORED_BYTES = 6 * 1024 * 1024;
 const MAX_PIXELS = 20_000_000;
 const MAX_SIDE = 1280;
 
-type TransformResult = { response(): Response };
+type TransformResult = { response(): Promise<Response> };
 type ImageChain = {
   transform(options: {
     width: number; height: number; fit: "scale-down"; metadata: "none";
