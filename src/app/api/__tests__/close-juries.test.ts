@@ -116,6 +116,9 @@ function makeCronAdmin(opts: {
   const reqSingle = vi.fn(async () => ({ data: { photo_path: null }, error: null }));
   const reqEq = vi.fn(() => ({
     single: reqSingle,
+    order: () => ({
+      limit: async () => ({ data: opts.open ?? [], error: opts.openError ?? null }),
+    }),
     // select(...).eq("status", "jury_open") → awaitato direttamente (thenable).
     then(onOk?: (v: unknown) => unknown) {
       return Promise.resolve(onOk?.({ data: opts.open ?? [], error: opts.openError ?? null }));
