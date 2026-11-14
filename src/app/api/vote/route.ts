@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
   const admin = createAdminClient();
 
   // La request deve essere in jury_open e non propria.
-  const { data: request, error: rErr } = await supabase
+  const { data: request, error: rErr } = await admin
     .from("requests")
     .select("id, status, user_id, jury_deadline_at")
     .eq("id", requestId)
