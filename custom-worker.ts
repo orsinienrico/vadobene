@@ -24,7 +24,7 @@ export default {
     const readOnly = request.method === "GET" || request.method === "HEAD";
     const publicPreviewPath = pathname === "/api/health"
       || (readOnly && (
-        pathname === "/" || pathname === "/privacy" ||
+        pathname === "/" || pathname === "/privacy" || pathname === "/login" ||
         pathname.startsWith("/_next/static/") ||
         pathname === "/favicon.ico" ||
         pathname === "/apple-touch-icon.png" ||

@@ -1,5 +1,5 @@
 import { trustedSiteOrigin } from "@/lib/request-security";
-import { requireLiveInteractions } from "@/lib/launch-control";
+import { requireCommercialInteractions } from "@/lib/launch-control";
 import { requireTrustedMutation } from "@/lib/request-security";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
@@ -17,7 +17,7 @@ const CheckoutBody = z.object({
  * Boost €0,99 (una tantum) · Pro €3,99/mese · Pro €29/anno.
  */
 export async function POST(req: NextRequest) {
-  const unavailable = requireLiveInteractions();
+  const unavailable = requireCommercialInteractions();
   if (unavailable) return unavailable;
   const forbiddenOrigin = requireTrustedMutation(req);
   if (forbiddenOrigin) return forbiddenOrigin;

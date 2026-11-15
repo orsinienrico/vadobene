@@ -1,3 +1,4 @@
+import { requireBetaInvite } from "@/lib/beta-access";
 import { requireLiveInteractions } from "@/lib/launch-control";
 import { NextResponse } from "next/server";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
@@ -15,6 +16,8 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   const unavailable = requireLiveInteractions();
   if (unavailable) return unavailable;
+  const denied = await requireBetaInvite();
+  if (denied) return denied;
 
   const supabase = await createClient();
 

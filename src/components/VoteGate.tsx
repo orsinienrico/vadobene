@@ -33,8 +33,10 @@ const SWAP_DELAY_MS = 1200;
  */
 export function VoteGate({
   onCreditFull,
+  inviteOnly = false,
 }: {
   onCreditFull: (credit: number, opts?: { allowAi?: boolean }) => void;
+  inviteOnly?: boolean;
 }) {
   const [credit, setCredit] = useState<number>(0);
   const [card, setCard] = useState<Card | null>(null);
@@ -179,7 +181,7 @@ export function VoteGate({
         email,
         // ?resume=1 sopravvive al round-trip dei token (che usano l'hash):
         // al ritorno il flusso riprende dalla richiesta più recente.
-        options: { emailRedirectTo: `${window.location.origin}/?resume=1` },
+        options: { shouldCreateUser: false, emailRedirectTo: `${window.location.origin}/?resume=1` },
       });
       if (error) {
         setMagicError("Il link non è partito. Controlla l'indirizzo e riprova.");
@@ -193,7 +195,14 @@ export function VoteGate({
     }
   };
 
-  const authBox = (
+  const authBox = inviteOnly ? (
+    <div className="mt-4 text-sm">
+      <p className="text-muted">La sessione è scaduta. Accedi di nuovo con l&apos;email invitata.</p>
+      <a href="/login" className="mt-3 inline-flex rounded-lg bg-gold px-5 py-2 font-semibold text-ink">
+        Accedi alla beta
+      </a>
+    </div>
+  ) : (
     <div className="mt-4 text-sm">
       {magicSent ? (
         <p className="text-ok">Controlla la mail: ti ho mandato il link per entrare.</p>

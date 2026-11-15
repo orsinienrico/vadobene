@@ -1,5 +1,5 @@
 import { trustedSiteOrigin } from "@/lib/request-security";
-import { requireLiveInteractions } from "@/lib/launch-control";
+import { requireCommercialInteractions } from "@/lib/launch-control";
 import { requireTrustedMutation } from "@/lib/request-security";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
@@ -11,7 +11,7 @@ export const runtime = "nodejs";
  * POST /api/stripe/portal — Customer Portal per gestire l'abbonamento Pro.
  */
 export async function POST(req: Request) {
-  const unavailable = requireLiveInteractions();
+  const unavailable = requireCommercialInteractions();
   if (unavailable) return unavailable;
   const forbiddenOrigin = requireTrustedMutation(req);
   if (forbiddenOrigin) return forbiddenOrigin;

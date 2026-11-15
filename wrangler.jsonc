@@ -25,7 +25,12 @@
     "VB_IMAGE_PROCESSOR": "cloudflare",
     "LAUNCH_ENABLED": "false",
     "SCHEDULER_ENABLED": "false",
-    "SCHEDULER_CONFIRMED": "false"
+    "SCHEDULER_CONFIRMED": "false",
+    "BETA_ENABLED": "false",
+    "BETA_READY_CONFIRMED": "false",
+    "BETA_AUTH_ENABLED": "false",
+    "NEXT_PUBLIC_SUPABASE_URL": "https://vzcbylzozovvvzgeacrt.supabase.co",
+    "NEXT_PUBLIC_SITE_URL": "https://vadobene.casabearpisa.workers.dev"
   },
   "observability": {
     "enabled": true
@@ -39,7 +44,10 @@
       "LAUNCH_ENABLED": "false",
       "SCHEDULER_ENABLED": "false",
       "SCHEDULER_CONFIRMED": "false",
-      "VB_PREVIEW_LOCKED": "true"
+      "VB_PREVIEW_LOCKED": "true",
+      "BETA_ENABLED": "false",
+      "BETA_READY_CONFIRMED": "false",
+      "BETA_AUTH_ENABLED": "false"
     },
     "images": {
       "binding": "IMAGES"
